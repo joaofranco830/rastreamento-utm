@@ -13,7 +13,7 @@
 | 1 | Rastreio (script + ingestão) | ✅ concluída |
 | 2 | Vendas + reembolsos (webhook Hotmart) | ✅ código pronto · ⏳ falta deploy + config Hotmart |
 | 3 | Atribuição (o coração) | ✅ concluída |
-| 4 | Integração Meta | ⏳ não iniciada |
+| 4 | Integração Meta | 📐 design pronto (`docs/fase4-design.md`) · ⏳ falta token Meta p/ implementar |
 | 5 | Dashboard | ⏳ não iniciada |
 | 6 | Endurecimento | ⏳ não iniciada |
 
@@ -156,6 +156,15 @@ O código das Fases 0–3 está pronto e testado contra o banco. Faltam 2 passos
 ### Limitações conscientes (anotadas)
 - `ad_id` fica **null** até a Fase 4 (tabela `ads` vazia); a origem por UTM já está guardada para o join.
 - Fallback por contato dormente (decisão "sem PII no rastreio" da Fase 1).
+
+---
+
+## Fase 4 — Meta Ads (design pronto, NÃO implementado)
+
+Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos lá:
+- **Token System User do Meta** (permissão `ads_read`) + **ad account id** (`act_<id>`) — guia passo a passo no doc.
+- **Convenção de URL no Meta Ads Manager** (campo "Parâmetros de URL" do anúncio): `utm_source=meta&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.id}}&utm_term={{adset.id}}`. O `{{ad.id}}` em `utm_content` é o que liga a venda ao anúncio (já preparado na Fase 3).
+- Nota 2026: o Meta removeu as janelas `7d_view`/`28d_view`; usaremos `7d_click` (alinha com nosso last-click 7d).
 
 ---
 
