@@ -130,10 +130,14 @@
 - [x] Revisão adversarial (10 achados na 1ª + reforço na 3ª) — todos corrigidos.
 - [x] Testado: compra→líquido; reembolso total→0; parcial→reduz; **parcial/reembolso ANTES da venda**→correto; reenvio não duplica; Hottok inválido→401; anon não chama a RPC→401.
 
-### Falta (BLOQUEADO — precisa de você)
-- [ ] **Deploy na Vercel** (Task #1) → gera a URL pública do webhook.
-- [ ] **Configurar o webhook na Hotmart** (Task #2): colar `https://<app>.vercel.app/api/webhook/hotmart` + Hottok + marcar eventos: APPROVED, COMPLETE, REFUNDED, CHARGEBACK, CANCELED, PROTEST.
-- [ ] Disparar "enviar teste" na Hotmart e validar o payload real (ver sandbox abaixo).
+### Deploy + validação no sandbox — FEITO
+- [x] **Deploy na Vercel** (no ar) e webhook apontado na Hotmart; "enviar teste" recebido e processado.
+- [x] **Payload real validado** (teste da Hotmart): confirmados os caminhos `data.purchase.{transaction,status,price.value,order_date,approved_date}`, envelope `{id,event,version,creation_date}`, **Hottok no header** `X-HOTMART-HOTTOK`, status reais (APPROVED, COMPLETED, REFUNDED, CHARGEBACK, CANCELED, DISPUTE, EXPIRED, BILLET_PRINTED, DELAYED) + evento `ORDER_FULFILLMENT`. Recompute de gross/refunded/status correto com 9 eventos misturados no mesmo pedido.
+
+### ⚠️ Pendente — confirmar `src` numa VENDA REAL rastreada
+- O teste da Hotmart **não traz** o objeto `origin`/`tracking` (sem parâmetros de rastreio). As chaves reais de `purchase` incluem `offer, price, status, payment, order_date, transaction, approved_date, sckPaymentLink, checkout_country` — **sem `origin`**.
+- Logo, **onde o nosso `src` (visitor_id) aparece numa venda real ainda não foi confirmado**. Mitigação: o parser agora **varre vários caminhos** (`origin.src/sck/xcod`, `tracking.*`, `purchase.src/sck`) e só aceita valor que case com o formato do `visitor_id`; a RPC ainda confere se o visitante existe (à prova de falso-positivo). E o `raw_payload` é guardado → quando a 1ª venda rastreada chegar, dá pra confirmar o caminho exato e reprocessar (`backfillAttributions`) sem perda.
+- **Ação:** instalar o `t.js` no funil + fazer/realizar 1 venda rastreada → inspecionar o `raw_payload` dela e travar o caminho do `src`.
 
 ---
 

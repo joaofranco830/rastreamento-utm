@@ -68,6 +68,7 @@ export function parseHotmartPayload(body: unknown): ParsedHotmart {
   const purchase = obj(data.purchase);
   const buyer = obj(data.buyer);
   const origin = obj(purchase.origin);
+  const tracking = obj(purchase.tracking);
   const price = obj(purchase.price);
   const fullPrice = obj(purchase.full_price);
 
@@ -79,12 +80,23 @@ export function parseHotmartPayload(body: unknown): ParsedHotmart {
   // nunca null: order_events.type é NOT NULL (evita 500 + retry infinito).
   const statusNorm = canon ? canon.toLowerCase() : "unknown";
 
-  // visitor_id vem em origin.src — minúsculo e validado contra a regra de ouro.
+  // visitor_id vem do src do checkout. O objeto exato ainda não foi confirmado
+  // num pedido real rastreado (o teste da Hotmart não traz tracking). Por isso
+  // varremos vários caminhos candidatos e só aceitamos o que casar com o formato
+  // do nosso visitor_id; além disso a RPC confere se o visitante EXISTE (à prova
+  // de falso-positivo). Prioridade: src > sck > xcod.
+  const srcCandidates: unknown[] = [
+    origin.src, origin.sck, origin.xcod,
+    tracking.source, tracking.src, tracking.sck,
+    purchase.src, purchase.sck,
+  ];
   let visitorId: string | null = null;
-  const srcRaw = str(origin.src);
-  if (srcRaw) {
-    const candidate = srcRaw.trim().toLowerCase();
-    visitorId = isValidVisitorId(candidate) ? candidate : null;
+  for (const c of srcCandidates) {
+    const v = typeof c === "string" ? c.trim().toLowerCase() : null;
+    if (v && isValidVisitorId(v)) {
+      visitorId = v;
+      break;
+    }
   }
 
   const grossValue = money(price.value ?? fullPrice.value);
