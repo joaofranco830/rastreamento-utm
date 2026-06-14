@@ -28,6 +28,11 @@
 - **Deployment Protection** (Vercel Authentication) **desligada** — necessária para a Hotmart/funil alcançarem o app; a autenticação do dashboard é a nossa (Supabase, via proxy.ts).
 - Framework do projeto = `nextjs` (precisou ser setado; sem isso as rotas dinâmicas davam 404).
 - Testado ao vivo: webhook grava no banco (compra→reembolso→líquido 0), valida Hottok (401 se errado).
+- **VENDAS REAIS já entrando** (desde 14/06 ~12:37): o webhook está recebendo eventos reais da Hotmart. (Esses dados são REAIS — não apagar.)
+- **Bug corrigido em produção (migration 0007):** status `COMPLETED` (com "d") não entrava no recálculo do bruto → vendas `completed` ficavam R$ 0. Agora o recálculo usa uma função única `recompute_order_totals()` (inclui approved/complete/completed) e os pedidos existentes foram reprocessados.
+- **Fase 4 (prep, migration 0006):** `resolve_attribution_ads()` liga `attributions.ad_id` ao anúncio (`utm_content` → `ads.meta_id`), testado com dados sintéticos. Roda após o sync do Meta popular `ads`.
+- **Guia de instalação do rastreio:** `docs/instalacao-rastreio.md` (snippet pronto pro funil).
+- ⚠️ As vendas reais estão **sem atribuição** (`visitor_id` null) porque o `t.js` ainda não está no funil — instalar para começar a atribuir.
 
 ### ⏯️ Falta você (1 passo): apontar o webhook na Hotmart
 - URL acima + Hottok (o que você já me deu) + eventos: **APPROVED, COMPLETE, REFUNDED, CHARGEBACK, CANCELED, PROTEST**.
