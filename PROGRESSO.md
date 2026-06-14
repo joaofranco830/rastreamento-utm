@@ -11,7 +11,7 @@
 |---|---|---|
 | 0 | Fundação | ✅ concluída |
 | 1 | Rastreio (script + ingestão) | ✅ concluída |
-| 2 | Vendas + reembolsos (webhook Hotmart) | ✅ código pronto · ⏳ falta deploy + config Hotmart |
+| 2 | Vendas + reembolsos (webhook Hotmart) | ✅ NO AR (deploy Vercel + webhook testado) · ⏳ falta apontar na Hotmart |
 | 3 | Atribuição (o coração) | ✅ concluída |
 | 4 | Integração Meta | 📐 design pronto (`docs/fase4-design.md`) · ⏳ falta token Meta p/ implementar |
 | 5 | Dashboard | ⏳ não iniciada |
@@ -19,20 +19,20 @@
 
 ---
 
-## ⏯️ PARA QUANDO VOCÊ VOLTAR (2 desbloqueios rápidos)
+## 🌐 Produção (Vercel) — NO AR
 
-O código das Fases 0–3 está pronto e testado contra o banco. Faltam 2 passos que **só você** pode liberar (a extensão do Chrome não estava conectada e você estava ausente):
+- **App:** https://rastreamento-utm.vercel.app (projeto Vercel `rastreamento-utm`, team `jguilherme830-9670s-projects`).
+- **Webhook Hotmart:** `https://rastreamento-utm.vercel.app/api/webhook/hotmart`
+- **Endpoint de coleta (t.js):** `https://rastreamento-utm.vercel.app/api/collect` · script em `https://rastreamento-utm.vercel.app/t.js`
+- **Segredos** configurados na Vercel (production): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `HOTMART_HOTTOK`.
+- **Deployment Protection** (Vercel Authentication) **desligada** — necessária para a Hotmart/funil alcançarem o app; a autenticação do dashboard é a nossa (Supabase, via proxy.ts).
+- Framework do projeto = `nextjs` (precisou ser setado; sem isso as rotas dinâmicas davam 404).
+- Testado ao vivo: webhook grava no banco (compra→reembolso→líquido 0), valida Hottok (401 se errado).
 
-**1. Publicar na Vercel** — escolha UMA opção:
-   - **(a) Token (rápido):** crie um token em https://vercel.com/account/settings/tokens (scope: `jguilherme830-9670's projects`) e me mande. Eu publico + configuro os 4 segredos + testo, tudo automático.
-   - **(b) Conectar o Chrome:** abra a extensão Claude no Chrome e clique em "Connect"; eu crio o token e publico por você.
-
-**2. Configurar o webhook na Hotmart** (depois do deploy, eu faço por você se o Chrome estiver conectado, ou te passo o passo a passo):
-   - URL: `https://<seu-app>.vercel.app/api/webhook/hotmart`  ·  Hottok: o que você já me deu.
-   - Eventos: **APPROVED, COMPLETE, REFUNDED, CHARGEBACK, CANCELED, PROTEST**.
-   - Depois, "enviar teste" na Hotmart para validarmos o payload real (sandbox abaixo).
-
-> Enquanto isso não acontece, o app roda 100% local e os webhooks reais não chegam (Hotmart não alcança `localhost`).
+### ⏯️ Falta você (1 passo): apontar o webhook na Hotmart
+- URL acima + Hottok (o que você já me deu) + eventos: **APPROVED, COMPLETE, REFUNDED, CHARGEBACK, CANCELED, PROTEST**.
+- Depois, "enviar teste" na Hotmart → eu valido o payload real (ver sandbox abaixo).
+- Para instalar o rastreio no funil, cole o snippet (Fase 1) apontando para `https://rastreamento-utm.vercel.app/t.js` e `data-endpoint="https://rastreamento-utm.vercel.app/api/collect"`.
 
 ---
 
