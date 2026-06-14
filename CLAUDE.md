@@ -84,14 +84,16 @@ arquitetura-rastreamento-utm-v1.md  # desenho (fonte de verdade)
 
 ---
 
-## 7. Comandos (preencher conforme o projeto nasce)
+## 7. Comandos
 
-- Dev: `TODO`
-- Build: `TODO`
-- Testes: `TODO`
-- Lint/format: `TODO`
-- Migrations: `TODO`
-- Deploy: `TODO`
+> Node é instalado via **nvm**. Em terminal novo, o nvm carrega sozinho (já está no `~/.zshrc`).
+
+- Dev: `npm run dev` → abre em http://localhost:3000
+- Build: `npm run build`
+- Testes: `TODO` (a configurar nas fases com caminho crítico — Fases 2/3)
+- Lint: `npm run lint`
+- Migrations: arquivos em `supabase/migrations/`. Banco na nuvem (projeto `rastreamento-utm`, org FRANCO ADVERTISING, região sa-east-1). Aplicar via painel Supabase ou `npx supabase db push` quando o projeto estiver linkado.
+- Deploy: `TODO` (Vercel — fase futura; ainda não fizemos deploy)
 
 ---
 

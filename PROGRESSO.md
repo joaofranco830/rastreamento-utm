@@ -9,7 +9,7 @@
 
 | Fase | Tema | Status |
 |---|---|---|
-| 0 | Fundação | 🟡 em andamento |
+| 0 | Fundação | ✅ concluída |
 | 1 | Rastreio (script + ingestão) | ⏳ não iniciada |
 | 2 | Vendas + reembolsos (webhook Hotmart) | ⏳ não iniciada |
 | 3 | Atribuição (o coração) | ⏳ não iniciada |
@@ -25,8 +25,8 @@
 - Stack: **Next.js 16 (App Router) + TypeScript + Tailwind**, **Supabase** (Postgres + Auth), deploy futuro na **Vercel**.
 - Fuso do negócio: **America/Sao_Paulo**. Janela de atribuição: **7 dias**.
 - Ferramentas instaladas **sem precisar de senha de admin**: Node via **nvm**, Supabase CLI via **npm** (dev dependency).
-- **Supabase rodando LOCAL** (Docker). Nada de nuvem/deploy nesta fase.
-- Segurança: **RLS ligado em todas as tabelas, sem políticas públicas** → acesso só pelo servidor.
+- **Supabase na nuvem (plano gratuito, R$ 0/mês)** — projeto `rastreamento-utm`, org FRANCO ADVERTISING, região **sa-east-1** (São Paulo). ID do projeto: `raipfvawzlwcioyfnbwn`. (Escolhemos nuvem em vez de Docker local pela simplicidade; é o mesmo banco que usaríamos em produção.) O **app roda local**; **deploy** (Vercel) fica para fase futura.
+- Segurança: **RLS ligado em todas as tabelas, sem políticas públicas** → acesso só pelo servidor (service_role). Confirmado pelo advisor (avisos "RLS sem política" são intencionais).
 
 ### Feito
 - [x] Node.js (LTS, via nvm) + npm.
@@ -42,21 +42,25 @@
 - [x] `.env.local.example` (modelo de segredos; `.env*` no `.gitignore`).
 - [x] `PROGRESSO.md` (este arquivo).
 
-### Falta para fechar a Fase 0
-- [ ] Instalar **Docker Desktop** (precisa da senha do Mac).
-- [ ] `supabase start` (sobe Postgres + Auth local).
-- [ ] Aplicar a migration no banco local.
-- [ ] Criar o usuário (você) e **testar o login de ponta a ponta**.
-- [ ] Rodar `npm run dev` e abrir no navegador.
+### Banco na nuvem
+- [x] Projeto Supabase criado (`rastreamento-utm`, sa-east-1, gratuito).
+- [x] Migration aplicada → 12 tabelas criadas, todas com RLS.
+- [x] `.env.local` gerado (URL + chave pública). Service role: pegar no painel na Fase 1/2.
+- [x] Usuário criado e **login testado de ponta a ponta** (token recebido).
+- [x] `npm run dev` sobe; `/` redireciona para `/login`; `/login` responde 200.
 
-### Definição de pronto (DoD)
-- [ ] App roda em `localhost` e abre sem erro.
-- [ ] Todas as tabelas criadas via migration versionada.
-- [ ] Login funciona; rota protegida exige sessão.
-- [ ] Timezone e janela de 7 dias fixados em config.
-- [ ] `.env` ignorado; nenhum segredo commitado.
-- [ ] Commits pequenos feitos.
-- [ ] Nada de nuvem/deploy (fica para quando autorizado).
+### Definição de pronto (DoD) — ✅ CONCLUÍDA
+- [x] App roda em `localhost` e abre sem erro.
+- [x] Todas as tabelas criadas via migration versionada.
+- [x] Login funciona; rota protegida exige sessão.
+- [x] Timezone e janela de 7 dias fixados em config.
+- [x] `.env` ignorado; nenhum segredo commitado.
+- [x] Commits pequenos feitos.
+- [x] Deploy NÃO feito (fica para quando autorizado).
+
+### Pendência leve (não bloqueia)
+- [ ] Ligar "Leaked Password Protection" no painel do Supabase (Auth) — opcional.
+- [ ] Trocar a senha temporária de login quando quiser.
 
 ---
 
