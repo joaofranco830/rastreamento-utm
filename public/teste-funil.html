@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Página de teste do funil — rastreio</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; line-height: 1.5; }
+    code { background: #f4f4f5; padding: 2px 6px; border-radius: 4px; }
+    .btn { display: inline-block; margin-top: 16px; padding: 12px 20px; background: #111; color: #fff; border-radius: 8px; text-decoration: none; }
+    .muted { color: #71717a; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Funil de teste (rastreio)</h1>
+  <p class="muted">
+    Esta página existe só para testar o <code>t.js</code> localmente. Abra com UTMs, ex.:<br />
+    <code>/teste-funil.html?utm_source=ig&utm_medium=cpc&utm_campaign=teste&fbclid=ABC123</code>
+  </p>
+
+  <p>O seu <strong>visitor_id</strong> nesta sessão: <code id="vid">carregando...</code></p>
+
+  <p>O link abaixo simula um checkout Hotmart. Ao carregar, o script injeta
+     <code>src=&lt;visitor_id&gt;</code> nele. Passe o mouse para ver o destino.</p>
+
+  <a class="btn" id="checkout" href="https://pay.hotmart.com/X0000000A?off=abc123">Ir para o checkout (Hotmart)</a>
+
+  <p class="muted" style="margin-top:24px">
+    Depois de abrir esta página, confira no banco: deve aparecer 1 visitante,
+    1 evento <code>pageview</code> e (se veio com UTM) 1 touchpoint.
+  </p>
+
+  <!-- Instalação do rastreio: no mesmo domínio do app, data-endpoint pode ser relativo. -->
+  <script
+    src="/t.js"
+    data-endpoint="/api/collect"
+    data-hotmart-hosts="hotmart.com"
+    data-checkout-url="pay.hotmart.com,/checkout,/comprar"
+    async></script>
+
+  <script>
+    // Só para exibir o visitor_id e o href já decorado nesta página de teste.
+    window.addEventListener("load", function () {
+      setTimeout(function () {
+        if (window.faTrack) document.getElementById("vid").textContent = window.faTrack.vid();
+        var a = document.getElementById("checkout");
+        a.textContent = "Ir para o checkout (Hotmart) — " + a.getAttribute("href");
+      }, 300);
+    });
+  </script>
+</body>
+</html>
