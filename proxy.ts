@@ -11,9 +11,11 @@ export const config = {
   matcher: [
     /*
      * Roda em todas as rotas, menos:
+     * - /api/* (rotas públicas/autossuficientes: collect, webhook, sync) — não
+     *   faz sentido checar sessão de usuário no endpoint de ingestão mais quente.
      * - arquivos estáticos do Next (_next/static, _next/image)
      * - favicon e imagens
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|js|css|html|txt|ico|woff|woff2|ttf|map|json|webmanifest)$).*)",
   ],
 };
