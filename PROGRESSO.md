@@ -10,7 +10,7 @@
 | Fase | Tema | Status |
 |---|---|---|
 | 0 | Fundação | ✅ concluída |
-| 1 | Rastreio (script + ingestão) | ⏳ não iniciada |
+| 1 | Rastreio (script + ingestão) | ✅ concluída |
 | 2 | Vendas + reembolsos (webhook Hotmart) | ⏳ não iniciada |
 | 3 | Atribuição (o coração) | ⏳ não iniciada |
 | 4 | Integração Meta | ⏳ não iniciada |
@@ -61,6 +61,46 @@
 ### Pendência leve (não bloqueia)
 - [ ] Ligar "Leaked Password Protection" no painel do Supabase (Auth) — opcional.
 - [ ] Trocar a senha temporária de login quando quiser.
+
+---
+
+## Fase 1 — Rastreio (script + ingestão)
+
+### Feito
+- [x] `public/t.js` — script vanilla: `visitor_id` 24-hex lowercase, cookie+localStorage com reconciliação, captura UTM/`fbclid`/referrer, envio via `sendBeacon` (fallback `fetch keepalive`), eventos `pageview` + `checkout_iniciado`, injeção de `src` nos links Hotmart (4 camadas: scan, MutationObserver, clique em capture, patch `window.open`).
+- [x] `app/api/collect/route.ts` — ingestão server-side: valida `visitor_id`, allow-list anti-PII em url/referrer, upsert `visitors` (preserva `first_touch`), `touchpoints` condicional com dedup consecutivo, insert `tracking_events`, CORS, runtime nodejs.
+- [x] `lib/supabase/admin.ts` — cliente `service_role` com `import "server-only"` (build quebra se vazar pro client).
+- [x] `proxy.ts` — exclui `/api/*` e estáticos (`/t.js`, `.html` etc.) da checagem de sessão.
+- [x] `public/teste-funil.html` — página de teste local.
+- [x] Revisão adversarial (design + 5 dimensões) aplicada; 5 achados corrigidos (PII allow-list, bfcache `pageshow`, blindagem do crypto).
+- [x] Testado contra o banco real: visitante/touchpoint/evento corretos; dedup de touchpoint OK; sem PII (só `utm_*`/`fbclid` sobrevivem em url/referrer). Dados de teste removidos.
+
+### Snippet de instalação (colar em TODAS as páginas do funil, antes de `</body>`)
+```html
+<!-- Em produção, troque pelo domínio do app publicado (Vercel) -->
+<script
+  src="https://SEU-APP.vercel.app/t.js"
+  data-endpoint="https://SEU-APP.vercel.app/api/collect"
+  data-hotmart-hosts="hotmart.com"
+  data-checkout-url="pay.hotmart.com,/checkout,/comprar"
+  async></script>
+```
+> Teste local: abra `http://localhost:3000/teste-funil.html?utm_source=ig&utm_campaign=teste`.
+
+### DoD — ✅ CONCLUÍDA
+- [x] Abrir página com UTM gera `visitors`/`touchpoints`/`tracking_events` corretos.
+- [x] `visitor_id` persiste (cookie+localStorage) e respeita a regra de ouro (≤30, lowercase, sem `_`).
+- [x] `src` é injetado nos links de checkout Hotmart.
+- [x] TypeScript e ESLint limpos.
+
+### A validar no sandbox Hotmart (antes da Fase 3)
+- [ ] Confirmar que `src` aceita ≥24 chars e volta **inalterado** no objeto `origin` do Webhook 2.0 (sem corte/mudança de caixa).
+- [ ] Confirmar nome exato dos campos em `origin` (`src`/`sck`/`xcod` vs `xcode`).
+- [ ] Testar o widget de checkout embarcado (iframe) — pode exigir passar `src` via config do snippet Hotmart.
+
+### Dívidas anotadas (Fase 6 — Endurecimento)
+- Rate limiting no `/collect` (hoje só há limite de 8 KB + validação rígida).
+- Avaliar nome neutro do script/endpoint vs ad-block.
 
 ---
 
