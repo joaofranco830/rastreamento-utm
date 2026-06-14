@@ -11,11 +11,28 @@
 |---|---|---|
 | 0 | Fundação | ✅ concluída |
 | 1 | Rastreio (script + ingestão) | ✅ concluída |
-| 2 | Vendas + reembolsos (webhook Hotmart) | ⏳ não iniciada |
-| 3 | Atribuição (o coração) | ⏳ não iniciada |
+| 2 | Vendas + reembolsos (webhook Hotmart) | ✅ código pronto · ⏳ falta deploy + config Hotmart |
+| 3 | Atribuição (o coração) | ✅ concluída |
 | 4 | Integração Meta | ⏳ não iniciada |
 | 5 | Dashboard | ⏳ não iniciada |
 | 6 | Endurecimento | ⏳ não iniciada |
+
+---
+
+## ⏯️ PARA QUANDO VOCÊ VOLTAR (2 desbloqueios rápidos)
+
+O código das Fases 0–3 está pronto e testado contra o banco. Faltam 2 passos que **só você** pode liberar (a extensão do Chrome não estava conectada e você estava ausente):
+
+**1. Publicar na Vercel** — escolha UMA opção:
+   - **(a) Token (rápido):** crie um token em https://vercel.com/account/settings/tokens (scope: `jguilherme830-9670's projects`) e me mande. Eu publico + configuro os 4 segredos + testo, tudo automático.
+   - **(b) Conectar o Chrome:** abra a extensão Claude no Chrome e clique em "Connect"; eu crio o token e publico por você.
+
+**2. Configurar o webhook na Hotmart** (depois do deploy, eu faço por você se o Chrome estiver conectado, ou te passo o passo a passo):
+   - URL: `https://<seu-app>.vercel.app/api/webhook/hotmart`  ·  Hottok: o que você já me deu.
+   - Eventos: **APPROVED, COMPLETE, REFUNDED, CHARGEBACK, CANCELED, PROTEST**.
+   - Depois, "enviar teste" na Hotmart para validarmos o payload real (sandbox abaixo).
+
+> Enquanto isso não acontece, o app roda 100% local e os webhooks reais não chegam (Hotmart não alcança `localhost`).
 
 ---
 
@@ -101,6 +118,44 @@
 ### Dívidas anotadas (Fase 6 — Endurecimento)
 - Rate limiting no `/collect` (hoje só há limite de 8 KB + validação rígida).
 - Avaliar nome neutro do script/endpoint vs ad-block.
+
+---
+
+## Fase 2 — Vendas + reembolsos (webhook Hotmart)
+
+### Feito (código pronto e testado contra o banco real)
+- [x] `POST /api/webhook/hotmart` — valida **Hottok** (timing-safe), parse defensivo, ACK 200.
+- [x] `lib/sales/hotmart.ts` (parser do payload 2.0) + `lib/sales/contact-hash.ts` (sha256, sem PII).
+- [x] RPC atômica `apply_hotmart_event` (migrations 0002/0003/0005): idempotente (dedupe por `event_id` + fallback determinístico), **líquido** (`net_value` gerado), **gross/refunded/status recalculados de `order_events`** (ordem-independente), restatement por coorte (`order_date` da venda original), não-regressão de status terminal.
+- [x] Revisão adversarial (10 achados na 1ª + reforço na 3ª) — todos corrigidos.
+- [x] Testado: compra→líquido; reembolso total→0; parcial→reduz; **parcial/reembolso ANTES da venda**→correto; reenvio não duplica; Hottok inválido→401; anon não chama a RPC→401.
+
+### Falta (BLOQUEADO — precisa de você)
+- [ ] **Deploy na Vercel** (Task #1) → gera a URL pública do webhook.
+- [ ] **Configurar o webhook na Hotmart** (Task #2): colar `https://<app>.vercel.app/api/webhook/hotmart` + Hottok + marcar eventos: APPROVED, COMPLETE, REFUNDED, CHARGEBACK, CANCELED, PROTEST.
+- [ ] Disparar "enviar teste" na Hotmart e validar o payload real (ver sandbox abaixo).
+
+---
+
+## Fase 3 — Atribuição (o coração) ✅
+
+### Feito (testado contra o banco real)
+- [x] `attribute_order()` (migrations 0004/0005): **last-click 7 dias** determinístico (`origin.src == visitor_id`) + **fallback por contato** (implementado, **DORMENTE** até o `t.js` capturar contato do visitante).
+- [x] Janela `(order_date − 7d, order_date]` em UTC; desempate `ts desc, id desc`; testado borda, fora-da-janela e last-click do mais recente.
+- [x] `origin` em **JSON** (snapshot do toque vencedor + `touchpoint_id` + `class`) → a Fase 4 liga `ad_id` por `utm_content` → `ads.meta_id` **sem migração**.
+- [x] `classify_origin()` (paid_meta / paid_meta_fbclid / organic / referral / direct) por host ancorado.
+- [x] Chamada **inline** no webhook (idempotente, tolerante a falha — atribuição nunca derruba a venda); **reembolso herda** automaticamente.
+- [x] `lib/attribution/origin.ts` (leitura) e `backfill.ts` (reprocessar, paginado).
+- [x] Revisão adversarial (13 achados) — corrigidos na migration 0005.
+
+### DoD
+- [x] Venda com UTM atribui ao criativo certo (testado: ad_aaa, ad_new, ad_live).
+- [x] Reembolso aparece sob o mesmo criativo (atribuição preservada, `net_value` cai).
+- [ ] "Venda sem src casa pelo fallback" — lógica pronta, mas **dormente** (sem captura de contato do visitante na v1). Ativará quando o `t.js` capturar contato.
+
+### Limitações conscientes (anotadas)
+- `ad_id` fica **null** até a Fase 4 (tabela `ads` vazia); a origem por UTM já está guardada para o join.
+- Fallback por contato dormente (decisão "sem PII no rastreio" da Fase 1).
 
 ---
 
