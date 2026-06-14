@@ -116,7 +116,7 @@ export async function POST(req: Request): Promise<Response> {
     };
     const fbclid = clamp(p.fbclid, 512);
     const referrer = sanitizeUrl(clamp(p.referrer, 2048));
-    const page = clamp(p.page, 1024);
+    const page = sanitizeUrl(clamp(p.page, 1024)); // sanitiza também (vetor de PII)
     const url = sanitizeUrl(clamp(p.url, 2048));
 
     const hasOrigin = !!(
