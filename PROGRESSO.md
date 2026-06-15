@@ -13,7 +13,7 @@
 | 1 | Rastreio (script + ingestão) | ✅ concluída |
 | 2 | Vendas + reembolsos (webhook Hotmart) | ✅ NO AR (deploy Vercel + webhook testado) · ⏳ falta apontar na Hotmart |
 | 3 | Atribuição (o coração) | ✅ concluída |
-| 4 | Integração Meta | 📐 design pronto (`docs/fase4-design.md`) · ⏳ falta token Meta p/ implementar |
+| 4 | Integração Meta | 🚧 em andamento: lock de sync pronto (0008) · ⏳ falta token Meta p/ o cliente/sync |
 | 5 | Dashboard | ⏳ não iniciada |
 | 6 | Endurecimento | ⏳ não iniciada |
 
