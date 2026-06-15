@@ -131,6 +131,41 @@ export default async function Dashboard({
             </p>
           </Section>
 
+          {/* Por criativo (utm_content = nome do anúncio no Meta) */}
+          <Section title="Por criativo">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-zinc-500">
+                  <tr className="border-b border-black/[.08] dark:border-white/[.1]">
+                    <th className="py-2 font-medium">Criativo</th>
+                    <th className="py-2 text-right font-medium">Investido</th>
+                    <th className="py-2 text-right font-medium">Fat. líquido</th>
+                    <th className="py-2 text-right font-medium">Vendas líq.</th>
+                    <th className="py-2 text-right font-medium">ROAS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.creatives.length === 0 ? (
+                    <tr><td colSpan={5} className="py-3 text-zinc-500">Sem dados.</td></tr>
+                  ) : (
+                    d.creatives.map((c, i) => (
+                      <tr key={i} className="border-b border-black/[.04] dark:border-white/[.06]">
+                        <td className="max-w-xs truncate py-2">{c.creative ?? "—"}</td>
+                        <td className="py-2 text-right">{brl(c.invested)}</td>
+                        <td className="py-2 text-right">{brl(c.net_revenue)}</td>
+                        <td className="py-2 text-right">{inteiro(c.net_sales)}</td>
+                        <td className="py-2 text-right">{mult(c.roas)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-zinc-400">
+              Criativo = `utm_content` (nome do anúncio no Meta). O gasto soma todos os anúncios com o mesmo nome (reuso em campanhas/posições).
+            </p>
+          </Section>
+
           {/* Por campanha */}
           <Section title="Por campanha">
             <div className="overflow-x-auto">
