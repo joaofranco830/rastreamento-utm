@@ -10,6 +10,14 @@ export const dynamic = "force-dynamic"; // dados sempre frescos
 
 const PERIODOS = [7, 14, 30, 90];
 
+function metaStale(lastSyncAt: string | null, lastStatus: string | null): boolean {
+  if (lastStatus === "error") return true;
+  if (!lastSyncAt) return true;
+  const t = new Date(lastSyncAt).getTime();
+  if (Number.isNaN(t)) return true;
+  return Date.now() - t > 12 * 3600_000; // > 12h sem sync
+}
+
 function freshness(iso: string | null): string {
   if (!iso) return "nunca sincronizado";
   const t = new Date(iso).getTime();
@@ -35,6 +43,7 @@ export default async function Dashboard({
   const { dias } = await searchParams;
   const d = await getDashboardData(dias);
   const s = d.summary;
+  const metaProblema = metaStale(d.lastSyncAt, d.lastStatus);
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
@@ -68,6 +77,14 @@ export default async function Dashboard({
           </Link>
         ))}
       </nav>
+
+      {metaProblema && (
+        <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30">
+          ⚠️ Dados do Meta podem estar desatualizados (
+          {d.lastStatus === "error" ? "última sincronização falhou" : `sync ${freshness(d.lastSyncAt)}`}). O
+          dashboard segue com os últimos dados salvos — clique em <b>Atualizar Meta</b> para tentar de novo.
+        </div>
+      )}
 
       {!s ? (
         <p className="text-sm text-zinc-500">Sem dados para o período.</p>

@@ -17,6 +17,10 @@
   if (window.__faTrackLoaded) return;
   window.__faTrackLoaded = true;
 
+  // Respeita Do Not Track (privacidade/LGPD): não rastreia se o usuário ativou.
+  var _dnt = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+  if (_dnt === "1" || _dnt === "yes") return;
+
   // -------------------- CONFIG (data-* do <script>) --------------------
   var self = document.currentScript;
   function attr(name, def) {

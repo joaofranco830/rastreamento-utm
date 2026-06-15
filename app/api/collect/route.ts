@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"; // ingestão nunca é cacheada
 
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isValidVisitorId } from "@/lib/config";
+import { allow } from "@/lib/ratelimit";
 
 /**
  * POST /api/collect — recebe eventos do script de rastreio (t.js), que roda em
@@ -78,6 +79,11 @@ export async function OPTIONS(): Promise<Response> {
 }
 
 export async function POST(req: Request): Promise<Response> {
+  // Rate limit best-effort por IP (60 req / 10s) — contém floods sem derrubar.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!allow(`collect:${ip}`, 60, 10_000)) {
+    return noContent(); // descarta silencioso sob flood (cliente ignora a resposta)
+  }
   try {
     // 1) Corpo cru + limite de tamanho.
     const raw = await req.text();
