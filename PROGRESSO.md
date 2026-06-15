@@ -15,7 +15,7 @@
 | 3 | Atribuição (o coração) | ✅ concluída |
 | 4 | Integração Meta | ✅ concluída (sync no ar + cron 6h) |
 | 5 | Dashboard | ✅ concluída (escopo v1, no ar) |
-| 6 | Endurecimento | ⏳ não iniciada |
+| 6 | Endurecimento | ✅ concluída (no ar) |
 
 ---
 
@@ -200,6 +200,34 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
   - **Seletor de produto + campanhas a considerar no "investido"**, via TAG no nome da campanha (ex.: `[GEO-VOZ-02]`). Hoje o "Investido" soma a conta toda (inclui campanhas de conteúdo/outros produtos), então o ROAS-cabeça mistura tudo até existir esse filtro.
   - Muitas outras funções de dashboard planejadas pelo usuário.
 - ⚠️ Não foi possível tirar print automático (preview local quebra com Turbopack+nvm — só ambiente local; build e produção OK). Verificado por build + dados reais + produção servindo.
+
+---
+
+## Fase 6 — Endurecimento ✅ (no ar)
+
+> Objetivo: deixar o que já está no ar mais resistente a abuso, falha e privacidade — sem inventar feature nova. Tudo abaixo está em produção.
+
+### Feito
+- [x] **Rate limit no `/api/collect`** — `lib/ratelimit.ts` (janela deslizante em memória, best-effort por instância serverless), 60 req / 10 s por IP. Sob flood responde 204 silencioso (o `t.js` ignora o corpo). Contém abuso sem derrubar coleta legítima.
+- [x] **Resiliência do sync do Meta** — `lib/meta/client.ts` ganhou `fetchPage` com retries + backoff (500ms→1s→2s) em erros transitórios (rede, HTTP 429/5xx, códigos de cota). Erros de auth (token expirado, código 190 etc.) NÃO repetem — sinalizam reauth na hora.
+- [x] **Degradação visível no dashboard** — `app/page.tsx`: banner âmbar quando o Meta está defasado (último sync falhou OU >12h sem sync). O dashboard segue mostrando os últimos dados salvos (regra de ouro: lê sempre do nosso banco, nunca do Meta ao vivo).
+- [x] **Do Not Track (privacidade/LGPD)** — `t.js` aborta o rastreio logo no início se o navegador sinaliza DNT (`navigator.doNotTrack==="1"` / `"yes"`). Não cria `visitor_id`, não envia evento.
+- [x] **Hardening do banco (migration 0014)** — `search_path = public` fixado em todas as 11 funções (advisor `function_search_path_mutable` zerado). Evita sequestro de resolução de nomes por `search_path` malicioso.
+
+### Recheck de segurança (Supabase advisors) — pós-fase
+- **0 erros.** Restam só avisos esperados/baixo risco:
+  - 13× **"RLS sem política" (INFO)** — **intencional**: acesso exclusivo via servidor (service_role). É o desenho.
+  - 1× **`pg_net` no schema `public` (WARN)** — extensão usada só pelo cron interno (chamadas `net.http_post` são schema-qualificadas, não dependem do lugar da extensão). Sem exposição a `anon`. **Aceito** (mover arrisca quebrar o cron, ganho nulo num sistema de 1 usuário).
+  - 1× **"Leaked Password Protection desligada" (WARN)** — checagem de senha vazada (HaveIBeenPwned) no login. Opcional, 1 clique no painel: **Supabase → Authentication → Policies → Password → "Leaked password protection"**. Baixa prioridade (1 usuário, senha forte). Deixei a seu critério.
+
+### Backups
+- **Banco:** Supabase faz **backup diário automático** do Postgres no plano gratuito (gerenciado pela plataforma; PITR/restauração ponto-a-ponto é recurso pago — não necessário agora).
+- **Schema:** 100% reprodutível pelas **migrations versionadas** em `supabase/migrations/` (0001→0014). Recriar o banco do zero = aplicar as migrations.
+- **Segredos:** fora do git (`.env*` no `.gitignore`); na Vercel (production) e no Supabase Vault (cron). Guarde uma cópia sua dos tokens em lugar seguro.
+
+### Dívidas da Fase 1 endereçadas aqui
+- Rate limiting no `/collect` → **feito**.
+- Nome neutro do script/endpoint vs ad-block → **não alterado** (decisão: `t.js`/`/api/collect` já são neutros; renomear quebraria as instalações já no funil sem ganho real). Anotado caso ad-block vire problema medível.
 
 ---
 
