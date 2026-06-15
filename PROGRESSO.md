@@ -139,10 +139,12 @@
 - [x] **Deploy na Vercel** (no ar) e webhook apontado na Hotmart; "enviar teste" recebido e processado.
 - [x] **Payload real validado** (teste da Hotmart): confirmados os caminhos `data.purchase.{transaction,status,price.value,order_date,approved_date}`, envelope `{id,event,version,creation_date}`, **Hottok no header** `X-HOTMART-HOTTOK`, status reais (APPROVED, COMPLETED, REFUNDED, CHARGEBACK, CANCELED, DISPUTE, EXPIRED, BILLET_PRINTED, DELAYED) + evento `ORDER_FULFILLMENT`. Recompute de gross/refunded/status correto com 9 eventos misturados no mesmo pedido.
 
-### ⚠️ Pendente — confirmar `src` numa VENDA REAL rastreada
-- O teste da Hotmart **não traz** o objeto `origin`/`tracking` (sem parâmetros de rastreio). As chaves reais de `purchase` incluem `offer, price, status, payment, order_date, transaction, approved_date, sckPaymentLink, checkout_country` — **sem `origin`**.
-- Logo, **onde o nosso `src` (visitor_id) aparece numa venda real ainda não foi confirmado**. Mitigação: o parser agora **varre vários caminhos** (`origin.src/sck/xcod`, `tracking.*`, `purchase.src/sck`) e só aceita valor que case com o formato do `visitor_id`; a RPC ainda confere se o visitante existe (à prova de falso-positivo). E o `raw_payload` é guardado → quando a 1ª venda rastreada chegar, dá pra confirmar o caminho exato e reprocessar (`backfillAttributions`) sem perda.
-- **Ação:** instalar o `t.js` no funil + fazer/realizar 1 venda rastreada → inspecionar o `raw_payload` dela e travar o caminho do `src`.
+### ✅ `src` confirmado na 1ª venda real rastreada (15/06)
+- Venda real (Imersão Geografia da Voz) veio com **`data.purchase.origin.src = <nosso visitor_id 24-hex>`** — caminho confirmado, parser correto.
+- **Dash fácil e o nosso convivem:** mesma venda trouxe `origin.src` (nosso) **e** `origin.sck` (composto da Dash fácil) — sem conflito.
+- **Bug encontrado e corrigido:** os pageviews do `t.js` não chegavam ao `/collect` (data-endpoint caía no domínio do funil / atributo removido pelo construtor). O `t.js` agora **auto-detecta o endpoint** pela própria origem do script (deploy feito; funil pega na próxima visita por `max-age=0`).
+- ⚠️ Esta 1ª venda não pôde ser atribuída retroativamente (a visita ao funil não foi capturada antes do fix). **As próximas atribuem** assim que houver pageview capturado.
+- **Ação aberta:** confirmar com 1 visita real ao funil (pós-fix) que `visitors`/`touchpoints` passam a popular.
 
 ---
 
