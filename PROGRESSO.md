@@ -143,8 +143,8 @@
 - Venda real (Imersão Geografia da Voz) veio com **`data.purchase.origin.src = <nosso visitor_id 24-hex>`** — caminho confirmado, parser correto.
 - **Dash fácil e o nosso convivem:** mesma venda trouxe `origin.src` (nosso) **e** `origin.sck` (composto da Dash fácil) — sem conflito.
 - **Bug encontrado e corrigido:** os pageviews do `t.js` não chegavam ao `/collect` (data-endpoint caía no domínio do funil / atributo removido pelo construtor). O `t.js` agora **auto-detecta o endpoint** pela própria origem do script (deploy feito; funil pega na próxima visita por `max-age=0`).
-- ⚠️ Esta 1ª venda não pôde ser atribuída retroativamente (a visita ao funil não foi capturada antes do fix). **As próximas atribuem** assim que houver pageview capturado.
-- **Ação aberta:** confirmar com 1 visita real ao funil (pós-fix) que `visitors`/`touchpoints` passam a popular.
+- ✅ **CICLO FECHADO (15/06):** após o fix, vendas reais do funil rastreado passaram a atribuir. Ex.: HP2002806099 (R$47) → visitante capturado → campanha "[VEN][GEO-VOZ-02][PRÉ ESCALA AD0012]" → ROAS no dashboard. `visitors`/`touchpoints` populando (35+).
+- **Convenção de UTM do cliente (importante):** `utm_campaign` = NOME da campanha (bate com o Meta) e `utm_content` = slug (ex.: `geo-voz-ad0012`, NÃO o `{{ad.id}}`). Por isso o dashboard credita por **nome de campanha** (0012). Para granularidade **por anúncio**, configurar nos anúncios do Meta `utm_content={{ad.id}}`.
 
 ---
 
