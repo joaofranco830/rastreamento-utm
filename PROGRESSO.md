@@ -13,7 +13,7 @@
 | 1 | Rastreio (script + ingestão) | ✅ concluída |
 | 2 | Vendas + reembolsos (webhook Hotmart) | ✅ NO AR (deploy Vercel + webhook testado) · ⏳ falta apontar na Hotmart |
 | 3 | Atribuição (o coração) | ✅ concluída |
-| 4 | Integração Meta | 🚧 em andamento: lock de sync pronto (0008) · ⏳ falta token Meta p/ o cliente/sync |
+| 4 | Integração Meta | ✅ concluída (sync no ar + cron 6h) |
 | 5 | Dashboard | ⏳ não iniciada |
 | 6 | Endurecimento | ⏳ não iniciada |
 
@@ -174,6 +174,17 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - **Token System User do Meta** (permissão `ads_read`) + **ad account id** (`act_<id>`) — guia passo a passo no doc.
 - **Convenção de URL no Meta Ads Manager** (campo "Parâmetros de URL" do anúncio): `utm_source=meta&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.id}}&utm_term={{adset.id}}`. O `{{ad.id}}` em `utm_content` é o que liga a venda ao anúncio (já preparado na Fase 3).
 - Nota 2026: o Meta removeu as janelas `7d_view`/`28d_view`; usaremos `7d_click` (alinha com nosso last-click 7d).
+
+---
+
+## Fase 4 — Integração Meta Ads ✅ (no ar)
+
+- Conta validada: **BM-CLAUDIO ELISIO**, `act_555908086246166`, moeda **BRL**, fuso **America/Sao_Paulo** (= nosso fuso → datas dos insights já alinhadas).
+- `lib/meta/client.ts` (Graph API v25, insights nível ad, paginação, `actions[]` com janela `7d_click`) + `lib/meta/sync.ts` (lock → upsert hierarquia + `meta_insights_daily` → `resolve_attribution_ads` → release) + `app/api/sync/route.ts` (protegido por `SYNC_SECRET`).
+- **Cadência:** cron **6h** via **pg_cron + pg_net** (Vercel grátis limita a 1x/dia) chamando `/api/sync`; segredo no **Supabase Vault**. On-demand pelo mesmo endpoint. (Os gatilhos "login" e "30 min logado" entram com o dashboard, Fase 5.)
+- **Testado real:** 26 campanhas, 41 conjuntos, 131 anúncios, **769 insights** (15 dias), gasto **R$ 13.244,86**; idempotente (re-sync não duplica); 401 sem segredo; cron executou OK (`meta_sync_state.last_status='ok'`).
+- Env na Vercel (production): `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `SYNC_SECRET`.
+- ⏳ `attributions.ad_id` liga sozinho quando houver **vendas rastreadas** com `utm_content={{ad.id}}` (hoje `ad_links=0`).
 
 ---
 
