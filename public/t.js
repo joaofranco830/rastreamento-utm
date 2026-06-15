@@ -160,11 +160,21 @@
     var nv = withSrc(href);
     if (nv !== href) a.setAttribute("href", nv);
   }
+  function decorateIframe(f) {
+    // checkout Hotmart embarcado (iframe): injeta o src ANTES de carregar.
+    if (!f || f.nodeType !== 1 || f.tagName !== "IFRAME") return;
+    var s = f.getAttribute("src");
+    if (!s || !isHotmartUrl(s)) return;
+    var ns = withSrc(s);
+    if (ns !== s) f.setAttribute("src", ns);
+  }
   function decorateAll(root) {
     var scope = root || document;
     if (!scope.getElementsByTagName) return;
     var as = scope.getElementsByTagName("a");
     for (var i = 0; i < as.length; i++) decorateAnchor(as[i]);
+    var fr = scope.getElementsByTagName("iframe");
+    for (var k = 0; k < fr.length; k++) decorateIframe(fr[k]);
   }
 
   // -------------------- checkout_iniciado --------------------
@@ -191,23 +201,17 @@
     var mo = new MutationObserver(function (muts) {
       for (var i = 0; i < muts.length; i++) {
         var m = muts[i];
-        if (m.type === "attributes" && m.target && m.target.tagName === "A") {
-          decorateAnchor(m.target);
+        if (m.type === "attributes" && m.target) {
+          if (m.target.tagName === "A") decorateAnchor(m.target);
+          else if (m.target.tagName === "IFRAME") decorateIframe(m.target);
           continue;
         }
         for (var j = 0; j < m.addedNodes.length; j++) {
           var n = m.addedNodes[j];
           if (!n || n.nodeType !== 1) continue;
           if (n.tagName === "A") decorateAnchor(n);
-          decorateAll(n);
-          // iframe de checkout embarcado: reescreve src antes do load
-          if (n.tagName === "IFRAME") {
-            var s = n.getAttribute("src");
-            if (s && isHotmartUrl(s)) {
-              var ns = withSrc(s);
-              if (ns !== s) n.setAttribute("src", ns);
-            }
-          }
+          if (n.tagName === "IFRAME") decorateIframe(n);
+          decorateAll(n); // <a> e <iframe> descendentes
         }
       }
     });
