@@ -20,6 +20,7 @@ export interface DashboardSummary {
   net_sales: number;
   paid_count: number;
   reverted_count: number;
+  orders_no_date: number;
   roas: number | null;
   refund_rate_count: number;
   refund_rate_value: number;
@@ -62,12 +63,23 @@ export async function getDashboardData(diasRaw?: string): Promise<DashboardData>
     supa.from("meta_insights_daily").select("synced_at").order("synced_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
 
+  // PostgREST devolve numeric/bigint de funções-tabela como string; normalizamos.
+  const campaigns: CampaignRow[] = (
+    (campaignsRes.data as Array<Record<string, unknown>>) ?? []
+  ).map((c) => ({
+    campaign: (c.campaign as string) ?? null,
+    invested: Number(c.invested) || 0,
+    net_revenue: Number(c.net_revenue) || 0,
+    net_sales: Number(c.net_sales) || 0,
+    roas: c.roas == null ? null : Number(c.roas),
+  }));
+
   return {
     dias,
     from,
     to,
     summary: (summaryRes.data as DashboardSummary) ?? null,
-    campaigns: (campaignsRes.data as CampaignRow[]) ?? [],
+    campaigns,
     lastSyncAt: stateRes.data?.last_finished_at ?? lastSyncRes.data?.synced_at ?? null,
     lastStatus: stateRes.data?.last_status ?? null,
   };

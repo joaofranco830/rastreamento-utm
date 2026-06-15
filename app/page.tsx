@@ -12,7 +12,9 @@ const PERIODOS = [7, 14, 30, 90];
 
 function freshness(iso: string | null): string {
   if (!iso) return "nunca sincronizado";
-  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "desconhecido";
+  const min = Math.max(0, Math.round((Date.now() - t) / 60000));
   if (min < 1) return "agora há pouco";
   if (min < 60) return `há ${min} min`;
   const h = Math.round(min / 60);
@@ -71,6 +73,11 @@ export default async function Dashboard({
         <p className="text-sm text-zinc-500">Sem dados para o período.</p>
       ) : (
         <div className="space-y-8">
+          {s.orders_no_date > 0 && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/30">
+              {inteiro(s.orders_no_date)} pedido(s) sem data de venda não entram em nenhum período (verificar payload).
+            </p>
+          )}
           {/* Cartões-cabeça */}
           <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Card title="Investido (Meta)" value={brl(s.invested)} />
@@ -97,8 +104,8 @@ export default async function Dashboard({
           {/* Reembolso */}
           <Section title="Reembolso">
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              <Mini title="Taxa (contagem)" value={pct(s.refund_rate_count)} hint="revertidas ÷ pagas" />
-              <Mini title="Taxa (valor)" value={pct(s.refund_rate_value)} hint="estornado ÷ bruto" />
+              <Mini title="Reembolso (pedidos)" value={pct(s.refund_rate_count)} hint="pedidos revertidos ÷ pagos" />
+              <Mini title="Reembolso (% do faturamento)" value={pct(s.refund_rate_value)} hint="valor estornado ÷ bruto (inclui parciais)" />
               <Mini title="Valor estornado" value={brl(s.refunded)} />
             </div>
           </Section>

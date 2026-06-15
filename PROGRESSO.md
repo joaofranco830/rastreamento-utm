@@ -14,7 +14,7 @@
 | 2 | Vendas + reembolsos (webhook Hotmart) | ✅ NO AR (deploy Vercel + webhook testado) · ⏳ falta apontar na Hotmart |
 | 3 | Atribuição (o coração) | ✅ concluída |
 | 4 | Integração Meta | ✅ concluída (sync no ar + cron 6h) |
-| 5 | Dashboard | ⏳ não iniciada |
+| 5 | Dashboard | ✅ concluída (escopo v1, no ar) |
 | 6 | Endurecimento | ⏳ não iniciada |
 
 ---
@@ -185,6 +185,16 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - **Testado real:** 26 campanhas, 41 conjuntos, 131 anúncios, **769 insights** (15 dias), gasto **R$ 13.244,86**; idempotente (re-sync não duplica); 401 sem segredo; cron executou OK (`meta_sync_state.last_status='ok'`).
 - Env na Vercel (production): `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `SYNC_SECRET`.
 - ⏳ `attributions.ad_id` liga sozinho quando houver **vendas rastreadas** com `utm_content={{ad.id}}` (hoje `ad_links=0`).
+
+---
+
+## Fase 5 — Dashboard ✅ (escopo v1, no ar)
+
+- `app/page.tsx` (protegido por login): cartões (Investido, Vendas líq., Faturamento líq., ROAS), funil, reembolso (pedidos + % faturamento), reconciliação Meta×nosso, tabela por campanha, seletor de período (7/14/30/90), botão **Atualizar Meta** (server action → sync), selo de freshness.
+- SQL: `dashboard_summary` + `dashboard_by_campaign` (0010) com correções da revisão (0011): net_sales NULL-safe e idêntico nas duas; expõe pedidos sem data; tudo líquido + coorte + fuso SP, sem divisão por zero.
+- Revisão adversarial (6 achados) aplicada. Funções revogadas de anon/authenticated; leitura via admin atrás do login.
+- **V2 (anotado, não implementar agora):** o usuário tem MUITAS funções extras planejadas para o dashboard — ficam para a v2.
+- ⚠️ Não foi possível tirar print automático (preview local quebra com Turbopack+nvm — só ambiente local; build e produção OK). Verificado por build + dados reais + produção servindo.
 
 ---
 

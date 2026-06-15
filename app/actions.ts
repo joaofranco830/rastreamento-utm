@@ -17,5 +17,9 @@ export async function refreshMeta(): Promise<{ ok: boolean; skipped?: string; er
 
   const result = await runMetaSync();
   revalidatePath("/");
-  return { ok: result.ok, skipped: result.skipped, error: result.error };
+  if (!result.ok && !result.skipped) {
+    // loga detalhe no servidor; ao client vai uma mensagem genérica.
+    console.error("[refreshMeta] sync falhou:", result.error);
+  }
+  return { ok: result.ok, skipped: result.skipped, error: result.ok || result.skipped ? undefined : "falha ao sincronizar" };
 }
