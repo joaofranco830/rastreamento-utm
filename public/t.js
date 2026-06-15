@@ -29,9 +29,18 @@
     return v.split(",").map(function (s) { return s.trim().toLowerCase(); })
             .filter(Boolean);
   }
+  // Endpoint padrão = MESMA origem de onde este t.js foi carregado (nosso domínio)
+  // + /api/collect. Assim funciona mesmo sem data-endpoint e mesmo se o construtor
+  // de páginas remover atributos. data-endpoint ainda pode sobrescrever.
+  function deriveEndpoint() {
+    try {
+      if (self && self.src) return new URL(self.src, location.href).origin + "/api/collect";
+    } catch {}
+    return "/api/collect";
+  }
 
   var CONFIG = {
-    endpoint: attr("data-endpoint", "/api/collect"),
+    endpoint: attr("data-endpoint", deriveEndpoint()),
     hotmartHosts: csv("data-hotmart-hosts", ["hotmart.com"]),
     checkoutUrlPatterns: csv("data-checkout-url", ["pay.hotmart.com", "/checkout", "/comprar"]),
     checkoutSelector: attr("data-checkout-selector", "")

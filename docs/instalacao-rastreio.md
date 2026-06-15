@@ -7,15 +7,12 @@ cliques e ligar tudo às vendas, **cole o snippet abaixo em TODAS as páginas do
 ## Snippet (copiar e colar)
 
 ```html
-<script
-  src="https://rastreamento-utm.vercel.app/t.js"
-  data-endpoint="https://rastreamento-utm.vercel.app/api/collect"
-  data-hotmart-hosts="hotmart.com"
-  data-checkout-url="pay.hotmart.com,/checkout,/comprar"
-  async></script>
+<script src="https://rastreamento-utm.vercel.app/t.js" async></script>
 ```
 
+- O endpoint de coleta é **detectado automaticamente** (mesma origem do `t.js`) — não precisa configurar nada.
 - `async` = não trava o carregamento da página.
+- (Opcional) dá para sobrescrever com `data-endpoint`, `data-hotmart-hosts`, `data-checkout-url` no `<script>`, mas os padrões já funcionam.
 - Funciona em qualquer site (Builder da Hotmart, WordPress, ClickFunnels, página estática etc.).
 - O script gera um `visitor_id`, captura UTMs/`fbclid` e **injeta o `src` (visitor_id) nos links de checkout da Hotmart** automaticamente.
 
