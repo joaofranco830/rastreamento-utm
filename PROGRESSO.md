@@ -195,7 +195,10 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - `app/page.tsx` (protegido por login): cartões (Investido, Vendas líq., Faturamento líq., ROAS), funil, reembolso (pedidos + % faturamento), reconciliação Meta×nosso, tabela por campanha, seletor de período (7/14/30/90), botão **Atualizar Meta** (server action → sync), selo de freshness.
 - SQL: `dashboard_summary` + `dashboard_by_campaign` (0010) com correções da revisão (0011): net_sales NULL-safe e idêntico nas duas; expõe pedidos sem data; tudo líquido + coorte + fuso SP, sem divisão por zero.
 - Revisão adversarial (6 achados) aplicada. Funções revogadas de anon/authenticated; leitura via admin atrás do login.
-- **V2 (anotado, não implementar agora):** o usuário tem MUITAS funções extras planejadas para o dashboard — ficam para a v2.
+- **Por criativo (0013):** `dashboard_by_creative` agrupa por NOME do criativo (`utm_content` = nome do anúncio no Meta, ex.: `geo-voz-ad0012`), somando o gasto de anúncios duplicados (mesmo criativo reusado). Validado com venda real.
+- **V2 (anotado, não implementar agora):**
+  - **Seletor de produto + campanhas a considerar no "investido"**, via TAG no nome da campanha (ex.: `[GEO-VOZ-02]`). Hoje o "Investido" soma a conta toda (inclui campanhas de conteúdo/outros produtos), então o ROAS-cabeça mistura tudo até existir esse filtro.
+  - Muitas outras funções de dashboard planejadas pelo usuário.
 - ⚠️ Não foi possível tirar print automático (preview local quebra com Turbopack+nvm — só ambiente local; build e produção OK). Verificado por build + dados reais + produção servindo.
 
 ---
