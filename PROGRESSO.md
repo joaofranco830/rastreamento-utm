@@ -28,7 +28,7 @@
 |---|---|---|
 | V2-0 | Config base (produtos + campanhas por tag + retenção) | ✅ concluída (migration 0015 + tela /configuracoes) |
 | V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ✅ código pronto (migration 0016 aplicada; validação ao vivo no marco/deploy) |
-| V2-2 | Sync do Meta ampliado (vídeo + status) | ⏳ não iniciada |
+| V2-2 | Sync do Meta ampliado (vídeo + status) | ✅ código pronto (migration 0017 aplicada; sync ao vivo no marco/deploy) |
 | V2-3 | Camada de dados (funções de dashboard) | ⏳ não iniciada |
 | V2-4 | Front-end: Tela Central | ⏳ não iniciada |
 | V2-5 | Front-end: Tela Origem das UTMs | ⏳ não iniciada |
@@ -300,6 +300,22 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - **UA e geo no servidor** (headers da Vercel) em vez de no client: mais confiável e **sem dependência nova nem segredo** (evita lib de GeoIP).
 - **Comprador↔visitante** via `orders.visitor_id` + `orders.buyer_email` (não dupliquei e-mail cru em `visitors`); o `contact_hash` no visitante é o que ativa o match cross-device futuro.
 - **Conjunto por ID** depende de o Meta mandar `utm_term={{adset.id}}` nos parâmetros de URL do anúncio (hoje a convenção usa nome em `utm_campaign` e slug em `utm_content`). O código lida quando existir; configurar no Meta quando quiser ligar o nível de conjunto.
+
+---
+
+## Fase V2-2 — Sync do Meta ampliado (vídeo + status) ✅ (código)
+
+> Objetivo: puxar métricas de vídeo + cliques de link + veiculação (effective_status), além do que a v1 já trazia. Reaproveita 100% da resiliência (retry/backoff/lock/paginação).
+
+### Feito
+- [x] **Migration `0017_meta_video_status.sql`** (aditiva, aplicada): `meta_insights_daily` ganhou `video_3s`, `video_p75`, `video_p95`, `video_plays` (default 0); `campaigns`/`adsets`/`ads` ganharam `effective_status`. `link_clicks` já existia desde a 0001.
+- [x] **`lib/meta/client.ts`**: `fetchInsights` agora pede os campos de vídeo (`video_3_sec_watched_actions`, `video_p75/p95_watched_actions`, `video_play_actions`); novo `fetchEntityStatuses(level)` busca `effective_status` por nível (endpoint separado — status não vem nos insights); helper `extractMetric()` soma o valor das actions de vídeo (prefere janela `7d_click`).
+- [x] **`lib/meta/sync.ts`**: busca os 3 mapas de status em paralelo; grava `effective_status` no upsert da hierarquia (campanha/conjunto/anúncio) e as 4 métricas de vídeo em `meta_insights_daily`. Idempotente (mesmos upserts por chave única). Lock/retry/cron inalterados.
+
+### Validação
+- [x] `lint` + `build` limpos; migration aditiva aplicada (5 colunas em insights + status nos 3 níveis confirmadas).
+- [x] Nomes dos campos da Graph API v25 conferem (vídeo + `effective_status`).
+- [ ] **Sync ao vivo** (vídeo/status realmente populando): só no **deploy do marco** — o token do Meta está só na Vercel (não no ambiente local). O cron 6h passa a trazer os campos novos automaticamente após o deploy.
 
 ---
 

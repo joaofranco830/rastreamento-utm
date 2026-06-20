@@ -108,6 +108,11 @@ export interface MetaInsightRow {
   clicks?: string;
   inline_link_clicks?: string;
   actions?: Array<{ action_type: string; value?: string; [w: string]: unknown }>;
+  // Vídeo: cada campo é um array de actions com `value` (vazio em estático).
+  video_3_sec_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
+  video_p75_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
+  video_p95_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
+  video_play_actions?: Array<{ value?: string; [w: string]: unknown }>;
   date_start: string;
 }
 
@@ -118,7 +123,8 @@ export async function fetchInsights(sinceDays = 14): Promise<MetaInsightRow[]> {
   const params = new URLSearchParams({
     level: "ad",
     fields:
-      "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,inline_link_clicks,actions,date_start",
+      "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,inline_link_clicks,actions," +
+      "video_3_sec_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_play_actions,date_start",
     action_attribution_windows: JSON.stringify([META_ATTR_WINDOW]),
     time_increment: "1",
     time_range: JSON.stringify({ since: ymd(since), until: ymd(until) }),
@@ -127,6 +133,42 @@ export async function fetchInsights(sinceDays = 14): Promise<MetaInsightRow[]> {
   });
   const data = await getAllPages(`${BASE}/${account()}/insights?${params.toString()}`);
   return data as unknown as MetaInsightRow[];
+}
+
+/**
+ * Busca o effective_status (veiculação) de todas as entidades de um nível.
+ * Endpoint separado: o status NÃO vem nos insights. Retorna Map<meta_id, status>.
+ */
+export async function fetchEntityStatuses(
+  level: "campaigns" | "adsets" | "ads",
+): Promise<Map<string, string>> {
+  const params = new URLSearchParams({
+    fields: "id,effective_status",
+    limit: "500",
+    access_token: token(),
+  });
+  const data = await getAllPages(`${BASE}/${account()}/${level}?${params.toString()}`);
+  const m = new Map<string, string>();
+  for (const r of data) {
+    const id = r.id as string | undefined;
+    const st = r.effective_status as string | undefined;
+    if (id && st) m.set(id, st);
+  }
+  return m;
+}
+
+/** Soma o `value` de um campo de action (vídeo). Prefere a janela 7d_click. */
+export function extractMetric(
+  arr?: Array<{ value?: string; [w: string]: unknown }>,
+): number {
+  if (!arr || arr.length === 0) return 0;
+  let sum = 0;
+  for (const a of arr) {
+    const raw = (a[META_ATTR_WINDOW] as string) ?? a.value ?? "0";
+    const n = Number(raw);
+    if (isFinite(n)) sum += n;
+  }
+  return Math.round(sum);
 }
 
 /** Extrai o valor de um action_type (prefere a janela 7d_click; senão o total). */
