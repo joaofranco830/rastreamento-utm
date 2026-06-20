@@ -9,13 +9,14 @@ import LogoutButton from "./logout-button";
 const TABS: { href: string; label: string }[] = [
   { href: "/central", label: "Central" },
   { href: "/origem", label: "Origem" },
+  { href: "/campanhas", label: "Campanhas" },
 ];
 
 export default function Nav({
   active,
   qs = "",
 }: {
-  active: "/central" | "/origem";
+  active: "/central" | "/origem" | "/campanhas";
   qs?: string;
 }) {
   return (

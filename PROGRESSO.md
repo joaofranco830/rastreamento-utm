@@ -43,7 +43,7 @@
 | V2-3 | Camada de dados (funções de dashboard) | 🔄 em andamento (Central ✅ — falta origem/clientes/campanhas) |
 | V2-4 | Front-end: Tela Central | ✅ construída (rota /central; validação visual no deploy) |
 | V2-5 | Front-end: Tela Origem das UTMs | ✅ construída (rota /origem: origem + clientes expansíveis) |
-| V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ⏳ não iniciada |
+| V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ✅ construída (rota /campanhas: drill-down + todas as colunas + criativos) |
 | V2-7 | Retenção + endurecimento | ⏳ não iniciada |
 
 ---
