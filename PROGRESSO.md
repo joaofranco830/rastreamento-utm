@@ -27,7 +27,7 @@
 | Fase | Tema | Status |
 |---|---|---|
 | V2-0 | Config base (produtos + campanhas por tag + retenção) | ✅ concluída (migration 0015 + tela /configuracoes) |
-| V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ⏳ não iniciada |
+| V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ✅ código pronto (migration 0016 aplicada; validação ao vivo no marco/deploy) |
 | V2-2 | Sync do Meta ampliado (vídeo + status) | ⏳ não iniciada |
 | V2-3 | Camada de dados (funções de dashboard) | ⏳ não iniciada |
 | V2-4 | Front-end: Tela Central | ⏳ não iniciada |
@@ -274,6 +274,32 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - [x] Gravação/persistência validada com round-trip no banco (editar → ler → restaurar ao seed).
 - [x] `npm run lint` e `npm run build` limpos.
 - [ ] **Deploy na Vercel** — pendente (aguarda "ok" separado; a tela só aparece no ar após o deploy).
+
+---
+
+## Fase V2-1 — Atribuição ampliada (sinais + comprador + enriquecimento) ✅ (código)
+
+> Objetivo: capturar mais sinais do visitante (IP/geo/device/UA/fbp/fbc), gravar produto + comprador crus na venda e ligar comprador↔visitante. Só captura/armazena; nada de automação.
+
+### Feito
+- [x] **Migration `0016_v2_signals_buyer.sql`** (aditiva, aplicada): colunas novas em `visitors` (`ip`, `geo_country`, `geo_region`, `geo_city`, `user_agent`, `device_type`, `fbp`, `fbc`) e `orders` (`product_id`, `buyer_email/name/phone/document`, `buyer_address` jsonb) + índices `product_id`/`buyer_email`. Sem FK rígida em `product_id` (elo lógico — venda nunca falha por produto não cadastrado). PII crua protegida por RLS já existente.
+- [x] **`public/t.js`**: lê os cookies do Meta `_fbp`/`_fbc` (quando o pixel está na página) e envia no payload. Mantém DNT, visitor_id 24-hex, injeção de `src`.
+- [x] **`/api/collect`**: deriva `device_type` do user-agent; pega **IP + geo dos headers** (`x-vercel-ip-*` em produção; `x-forwarded-for`/`x-real-ip` p/ IP); aceita `fbp`/`fbc`. Grava os sinais no visitante **só quando presentes** (não apaga com null) e preserva `first_touch`. Mantém rate limit + allow-list anti-PII.
+- [x] **`lib/sales/hotmart.ts`**: parser estendido — `productId` (`data.product.id`), `buyerName`, `buyerDocument`, `buyerAddress` (jsonb), além de email/telefone que já vinham. **Caminhos confirmados contra payloads reais** (`product.id/name`, `buyer.email/name/document/phone/address` com `city,state,zipcode,...`).
+- [x] **`app/api/webhook/hotmart`**: após a RPC (que já grava a venda), faz um **UPDATE best-effort** gravando `product_id` + comprador crus (só campos não-nulos) e **associa o contato (hash) ao visitante casado** (`visitors.contact_hash`, só quando nulo) — isso **ativa o fallback cross-device** para vendas futuras. O enriquecimento é isolado em try/catch: **nunca derruba o webhook** (a venda já está gravada).
+- [x] **Atribuição 3 níveis:** o `touchpoint`/`origin` JSON já carrega campanha (nome), conjunto (`utm_term`) e criativo (`utm_content`). Campanha e criativo já resolvem (v1). A resolução do **conjunto por ID** (`utm_term`→`adsets.meta_id`) é um join de leitura que entra na **V2-3** (camada de dados). Reembolso herda a atribuição (já funcionava).
+
+### Validação
+- [x] `lint` + `build` limpos.
+- [x] Migration aditiva aplicada **sem alterar dado real** (14 colunas confirmadas).
+- [x] Parser validado contra payloads reais (presença de produto/comprador/endereço, sem expor PII).
+- [x] **Round-trip sintético** (visitante + venda fake) provou que sinais, produto, comprador e `contact_hash` caem nas colunas certas — dados de teste removidos no fim.
+- [ ] **Validação ao vivo** (visita real gravando geo/fbp; webhook real gravando comprador): só no **deploy do marco** (geo só existe em produção na Vercel). Código pronto e validado offline.
+
+### Notas / decisões
+- **UA e geo no servidor** (headers da Vercel) em vez de no client: mais confiável e **sem dependência nova nem segredo** (evita lib de GeoIP).
+- **Comprador↔visitante** via `orders.visitor_id` + `orders.buyer_email` (não dupliquei e-mail cru em `visitors`); o `contact_hash` no visitante é o que ativa o match cross-device futuro.
+- **Conjunto por ID** depende de o Meta mandar `utm_term={{adset.id}}` nos parâmetros de URL do anúncio (hoje a convenção usa nome em `utm_campaign` e slug em `utm_content`). O código lida quando existir; configurar no Meta quando quiser ligar o nível de conjunto.
 
 ---
 

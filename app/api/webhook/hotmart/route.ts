@@ -98,6 +98,36 @@ export async function POST(req: Request): Promise<Response> {
     });
     if (error) throw error;
 
+    // V2-1: enriquecimento best-effort. A venda JÁ está gravada pela RPC acima;
+    // isto nunca pode derrubar o webhook (try/catch isolado, sem 5xx).
+    try {
+      // Produto + comprador crus (server-only). Só seta campos não-nulos para
+      // não apagar dados de comprador num evento posterior que venha sem eles.
+      const buyerPatch: Record<string, unknown> = {};
+      if (parsed.productId) buyerPatch.product_id = parsed.productId;
+      if (parsed.contactEmail) buyerPatch.buyer_email = parsed.contactEmail;
+      if (parsed.buyerName) buyerPatch.buyer_name = parsed.buyerName;
+      if (parsed.contactPhone) buyerPatch.buyer_phone = parsed.contactPhone;
+      if (parsed.buyerDocument) buyerPatch.buyer_document = parsed.buyerDocument;
+      if (parsed.buyerAddress) buyerPatch.buyer_address = parsed.buyerAddress;
+      if (Object.keys(buyerPatch).length > 0) {
+        await supa.from("orders").update(buyerPatch).eq("transaction", parsed.transaction);
+      }
+
+      // Associa o contato (hash) ao visitante casado -> ativa o fallback
+      // cross-device para vendas FUTURAS. Só preenche quando ainda está nulo.
+      if (parsed.visitorId && contactHash) {
+        await supa
+          .from("visitors")
+          .update({ contact_hash: contactHash })
+          .eq("visitor_id", parsed.visitorId)
+          .is("contact_hash", null);
+      }
+    } catch (e) {
+      const code = (e as { code?: string } | null)?.code;
+      console.error("[webhook] enriquecimento falhou (venda ok)", { code, transaction: txn });
+    }
+
     // data === 'processed' | 'duplicate' (ambos são sucesso idempotente).
     return NextResponse.json({ ok: true, result: data }, { status: 200 });
   } catch (err) {

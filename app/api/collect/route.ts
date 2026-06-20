@@ -44,6 +44,15 @@ function clamp(v: unknown, max: number): string | null {
   return typeof v === "string" && v.length > 0 ? v.slice(0, max) : null;
 }
 
+// device_type a partir do user-agent (server-side). Heurística simples e barata.
+function deviceFromUA(ua: string | null): string | null {
+  if (!ua) return null;
+  const s = ua.toLowerCase();
+  if (/ipad|tablet|playbook|silk|android(?!.*mobile)/.test(s)) return "tablet";
+  if (/mobile|iphone|ipod|android|blackberry|iemobile|opera mini/.test(s)) return "mobile";
+  return "desktop";
+}
+
 // Mantém só os parâmetros de atribuição da querystring. Descarta o fragmento (#)
 // e qualquer outro parâmetro (que poderia conter e-mail/telefone/CPF). Cobre URL
 // absoluta, relativa e lixo.
@@ -125,6 +134,30 @@ export async function POST(req: Request): Promise<Response> {
     const page = sanitizeUrl(clamp(p.page, 1024)); // sanitiza também (vetor de PII)
     const url = sanitizeUrl(clamp(p.url, 2048));
 
+    // Sinais do visitante (ADR-v2-4). UA/geo/IP vêm dos headers (servidor é a
+    // fonte de verdade do IP); fbp/fbc vêm do corpo (cookies do funil). Geo é
+    // preenchido pela Vercel em produção (vazio em dev local).
+    const ua = req.headers.get("user-agent");
+    const realIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      null;
+    const geoCity = req.headers.get("x-vercel-ip-city");
+    const signals: Record<string, string> = {};
+    if (realIp && realIp !== "unknown") signals.ip = realIp.slice(0, 64);
+    const geoCountry = req.headers.get("x-vercel-ip-country");
+    const geoRegion = req.headers.get("x-vercel-ip-country-region");
+    if (geoCountry) signals.geo_country = geoCountry.slice(0, 8);
+    if (geoRegion) signals.geo_region = geoRegion.slice(0, 32);
+    if (geoCity) signals.geo_city = decodeURIComponent(geoCity).slice(0, 128);
+    if (ua) signals.user_agent = ua.slice(0, 512);
+    const device = deviceFromUA(ua);
+    if (device) signals.device_type = device;
+    const fbp = clamp(p.fbp, 255);
+    const fbc = clamp(p.fbc, 512);
+    if (fbp) signals.fbp = fbp;
+    if (fbc) signals.fbc = fbc;
+
     const hasOrigin = !!(
       utm.utm_source ||
       utm.utm_medium ||
@@ -144,9 +177,11 @@ export async function POST(req: Request): Promise<Response> {
     );
     if (insErr) throw insErr;
 
+    // last_touch sempre; sinais só quando presentes (não sobrescreve com null —
+    // ex.: um pageview sem fbp não apaga o fbp já capturado antes).
     const { error: updErr } = await supa
       .from("visitors")
-      .update({ last_touch: nowIso })
+      .update({ last_touch: nowIso, ...signals })
       .eq("visitor_id", visitorId);
     if (updErr) throw updErr;
 

@@ -20,6 +20,11 @@ export interface ParsedHotmart {
   visitorId: string | null; // origin.src validado (ou null)
   contactEmail: string | null;
   contactPhone: string | null;
+  // V2-1: produto + comprador (crus, server-only).
+  productId: string | null; // data.product.id (Hotmart)
+  buyerName: string | null;
+  buyerDocument: string | null;
+  buyerAddress: Record<string, unknown> | null;
 }
 
 // status canônico (sem prefixo PURCHASE_) -> efeito no faturamento (ADR-4)
@@ -45,6 +50,13 @@ function str(v: unknown): string | null {
   return typeof v === "string" && v.length > 0 ? v : null;
 }
 
+/** id que pode vir como número ou string no payload -> string (ou null). */
+function idStr(v: unknown): string | null {
+  if (typeof v === "string" && v.length > 0) return v;
+  if (typeof v === "number" && isFinite(v)) return String(v);
+  return null;
+}
+
 function money(v: unknown): number {
   const n = typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN;
   if (!isFinite(n) || n < 0) return 0;
@@ -67,6 +79,8 @@ export function parseHotmartPayload(body: unknown): ParsedHotmart {
   const data = obj(root.data);
   const purchase = obj(data.purchase);
   const buyer = obj(data.buyer);
+  const product = obj(data.product);
+  const buyerAddr = obj(buyer.address);
   const origin = obj(purchase.origin);
   const tracking = obj(purchase.tracking);
   const price = obj(purchase.price);
@@ -138,5 +152,9 @@ export function parseHotmartPayload(body: unknown): ParsedHotmart {
     visitorId,
     contactEmail: str(buyer.email),
     contactPhone: str(buyer.checkout_phone) || str(buyer.phone),
+    productId: idStr(product.id),
+    buyerName: str(buyer.name),
+    buyerDocument: str(buyer.document) || str(buyer.doc),
+    buyerAddress: Object.keys(buyerAddr).length > 0 ? buyerAddr : null,
   };
 }
