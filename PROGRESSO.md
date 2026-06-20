@@ -26,11 +26,11 @@
 
 | Fase | Tema | Status |
 |---|---|---|
-| V2-0 | Config base (produtos + campanhas por tag + retenção) | ⏳ não iniciada |
-| V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ⏳ não iniciada |
-| V2-2 | Sync do Meta ampliado (vídeo + status) | ⏳ não iniciada |
-| V2-3 | Camada de dados (funções de dashboard) | ⏳ não iniciada |
-| V2-4 | Front-end: Tela Central | ⏳ não iniciada |
+| V2-0 | Config base (produtos + campanhas por tag + retenção) | ✅ concluída (migration 0015 + tela /configuracoes) |
+| V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ✅ código pronto (migration 0016 aplicada; validação ao vivo no marco/deploy) |
+| V2-2 | Sync do Meta ampliado (vídeo + status) | ✅ código pronto (migration 0017 aplicada; sync ao vivo no marco/deploy) |
+| V2-3 | Camada de dados (funções de dashboard) | 🔄 em andamento (Central ✅ — falta origem/clientes/campanhas) |
+| V2-4 | Front-end: Tela Central | ✅ construída (rota /central; validação visual no deploy) |
 | V2-5 | Front-end: Tela Origem das UTMs | ⏳ não iniciada |
 | V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ⏳ não iniciada |
 | V2-7 | Retenção + endurecimento | ⏳ não iniciada |
@@ -246,6 +246,110 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 ### Dívidas da Fase 1 endereçadas aqui
 - Rate limiting no `/collect` → **feito**.
 - Nome neutro do script/endpoint vs ad-block → **não alterado** (decisão: `t.js`/`/api/collect` já são neutros; renomear quebraria as instalações já no funil sem ganho real). Anotado caso ad-block vire problema medível.
+
+---
+
+## Fase V2-0 — Config base (produtos + campanhas por tag + retenção) ✅
+
+> Objetivo: criar a base de configuração da v2 — quais **produtos** entram no dash (com papel), qual **tag** filtra as campanhas do "investido", e a **retenção**. Só config; nada de automação.
+
+### Feito
+- [x] **Migration `0015_products_tracking_config.sql`** (100% aditiva): cria `products` e `tracking_config`. RLS ligado **sem política** (padrão v1). Nenhuma função nova (nada de search_path a fixar). Não toca em `orders`/`visitors`/`touchpoints`.
+  - `products`: `product_id` (PK, id Hotmart), `name`, `role` (check `principal/order_bump/upsell/downsell/other`, default `other`), `included` (bool default false), `created_at`, `updated_at`.
+  - `tracking_config` (single-row, `id=1`): `campaign_name_tags` (text[]), `retention_days` (int default **90**, check > 0), `updated_at`.
+- [x] **Seed dos 15 produtos reais** já vistos em `orders` (nomes do `raw_payload`), idempotente (`ON CONFLICT DO NOTHING` → não sobrescreve edições feitas na tela). Pré-marcados como **incluídos**: `7715052` Imersão Geografia da Voz (**principal**) e `7716106` Gravação da Imersão (**order_bump**). Os outros 13 ficam `included=false`/`other`.
+- [x] **Tela `/configuracoes`** (atrás do login, mesmo design system do dashboard): liga/desliga produtos + escolhe papel (salva sozinho); campo de texto pra digitar a(s) **tag(s)** de campanha (uma por linha; filtro = campanha cujo nome **contém** a tag); campo de **retenção** (dias). Link "⚙️ Configurações" no topo do dashboard.
+  - Leitura via `lib/config-store.ts` (admin/service_role, server-only). Gravação via server actions (`app/configuracoes/actions.ts`) que recheca login antes de escrever.
+- [x] **Decisão da tag (confirmada com o usuário):** campo de texto livre que ele mesmo escreve; só campanhas com a tag no nome entram no "investido"/ROAS. O **match** de fato (nome contém tag) será aplicado na camada de leitura nas Fases V2-3+.
+- [x] **Retenção baixa por padrão (90 dias)** para ficar no plano gratuito. A poda só liga na **V2-7**; aqui apenas guardamos o número. Vendas (`orders`) e agregados diários **nunca** são podados.
+
+### Divergências anotadas
+- A skill **frontend-design** (pedida pela arquitetura) **não está disponível neste ambiente** → a tela foi feita no design system já existente do dashboard, para manter consistência. Reaplicar a skill quando disponível.
+- Produção tem **15 produtos de nichos diferentes** (voz, criativos, coluna, sensualidade, música, comunidade), bem mais do que a arquitetura sugeria. O registry (`products.included`) resolve isso: o usuário liga só o que quer. Sem conflito com o desenho.
+
+### DoD — ✅
+- [x] `products` e `tracking_config` criadas com **RLS ligado e sem política** (advisor de segurança: **0 erros**; só os INFO "RLS sem política" intencionais).
+- [x] 15 produtos no registry; Imersão = `principal`/incluído e Gravação = `order_bump`/incluído; resto `included=false`.
+- [x] `tracking_config` com 1 linha; `retention_days=90`; tags começam vazias.
+- [x] Gravação/persistência validada com round-trip no banco (editar → ler → restaurar ao seed).
+- [x] `npm run lint` e `npm run build` limpos.
+- [ ] **Deploy na Vercel** — pendente (aguarda "ok" separado; a tela só aparece no ar após o deploy).
+
+---
+
+## Fase V2-1 — Atribuição ampliada (sinais + comprador + enriquecimento) ✅ (código)
+
+> Objetivo: capturar mais sinais do visitante (IP/geo/device/UA/fbp/fbc), gravar produto + comprador crus na venda e ligar comprador↔visitante. Só captura/armazena; nada de automação.
+
+### Feito
+- [x] **Migration `0016_v2_signals_buyer.sql`** (aditiva, aplicada): colunas novas em `visitors` (`ip`, `geo_country`, `geo_region`, `geo_city`, `user_agent`, `device_type`, `fbp`, `fbc`) e `orders` (`product_id`, `buyer_email/name/phone/document`, `buyer_address` jsonb) + índices `product_id`/`buyer_email`. Sem FK rígida em `product_id` (elo lógico — venda nunca falha por produto não cadastrado). PII crua protegida por RLS já existente.
+- [x] **`public/t.js`**: lê os cookies do Meta `_fbp`/`_fbc` (quando o pixel está na página) e envia no payload. Mantém DNT, visitor_id 24-hex, injeção de `src`.
+- [x] **`/api/collect`**: deriva `device_type` do user-agent; pega **IP + geo dos headers** (`x-vercel-ip-*` em produção; `x-forwarded-for`/`x-real-ip` p/ IP); aceita `fbp`/`fbc`. Grava os sinais no visitante **só quando presentes** (não apaga com null) e preserva `first_touch`. Mantém rate limit + allow-list anti-PII.
+- [x] **`lib/sales/hotmart.ts`**: parser estendido — `productId` (`data.product.id`), `buyerName`, `buyerDocument`, `buyerAddress` (jsonb), além de email/telefone que já vinham. **Caminhos confirmados contra payloads reais** (`product.id/name`, `buyer.email/name/document/phone/address` com `city,state,zipcode,...`).
+- [x] **`app/api/webhook/hotmart`**: após a RPC (que já grava a venda), faz um **UPDATE best-effort** gravando `product_id` + comprador crus (só campos não-nulos) e **associa o contato (hash) ao visitante casado** (`visitors.contact_hash`, só quando nulo) — isso **ativa o fallback cross-device** para vendas futuras. O enriquecimento é isolado em try/catch: **nunca derruba o webhook** (a venda já está gravada).
+- [x] **Atribuição 3 níveis:** o `touchpoint`/`origin` JSON já carrega campanha (nome), conjunto (`utm_term`) e criativo (`utm_content`). Campanha e criativo já resolvem (v1). A resolução do **conjunto por ID** (`utm_term`→`adsets.meta_id`) é um join de leitura que entra na **V2-3** (camada de dados). Reembolso herda a atribuição (já funcionava).
+
+### Validação
+- [x] `lint` + `build` limpos.
+- [x] Migration aditiva aplicada **sem alterar dado real** (14 colunas confirmadas).
+- [x] Parser validado contra payloads reais (presença de produto/comprador/endereço, sem expor PII).
+- [x] **Round-trip sintético** (visitante + venda fake) provou que sinais, produto, comprador e `contact_hash` caem nas colunas certas — dados de teste removidos no fim.
+- [ ] **Validação ao vivo** (visita real gravando geo/fbp; webhook real gravando comprador): só no **deploy do marco** (geo só existe em produção na Vercel). Código pronto e validado offline.
+
+### Notas / decisões
+- **UA e geo no servidor** (headers da Vercel) em vez de no client: mais confiável e **sem dependência nova nem segredo** (evita lib de GeoIP).
+- **Comprador↔visitante** via `orders.visitor_id` + `orders.buyer_email` (não dupliquei e-mail cru em `visitors`); o `contact_hash` no visitante é o que ativa o match cross-device futuro.
+- **Conjunto por ID** depende de o Meta mandar `utm_term={{adset.id}}` nos parâmetros de URL do anúncio (hoje a convenção usa nome em `utm_campaign` e slug em `utm_content`). O código lida quando existir; configurar no Meta quando quiser ligar o nível de conjunto.
+
+---
+
+## Fase V2-2 — Sync do Meta ampliado (vídeo + status) ✅ (código)
+
+> Objetivo: puxar métricas de vídeo + cliques de link + veiculação (effective_status), além do que a v1 já trazia. Reaproveita 100% da resiliência (retry/backoff/lock/paginação).
+
+### Feito
+- [x] **Migration `0017_meta_video_status.sql`** (aditiva, aplicada): `meta_insights_daily` ganhou `video_3s`, `video_p75`, `video_p95`, `video_plays` (default 0); `campaigns`/`adsets`/`ads` ganharam `effective_status`. `link_clicks` já existia desde a 0001.
+- [x] **`lib/meta/client.ts`**: `fetchInsights` agora pede os campos de vídeo (`video_3_sec_watched_actions`, `video_p75/p95_watched_actions`, `video_play_actions`); novo `fetchEntityStatuses(level)` busca `effective_status` por nível (endpoint separado — status não vem nos insights); helper `extractMetric()` soma o valor das actions de vídeo (prefere janela `7d_click`).
+- [x] **`lib/meta/sync.ts`**: busca os 3 mapas de status em paralelo; grava `effective_status` no upsert da hierarquia (campanha/conjunto/anúncio) e as 4 métricas de vídeo em `meta_insights_daily`. Idempotente (mesmos upserts por chave única). Lock/retry/cron inalterados.
+
+### Validação
+- [x] `lint` + `build` limpos; migration aditiva aplicada (5 colunas em insights + status nos 3 níveis confirmadas).
+- [x] Nomes dos campos da Graph API v25 conferem (vídeo + `effective_status`).
+- [ ] **Sync ao vivo** (vídeo/status realmente populando): só no **deploy do marco** — o token do Meta está só na Vercel (não no ambiente local). O cron 6h passa a trazer os campos novos automaticamente após o deploy.
+
+---
+
+## Fase V2-3 — Camada de dados (funções de dashboard) 🔄 em andamento
+
+> Objetivo: funções de leitura para as 3 telas, líquido + coorte + fuso SP, escopadas por produtos incluídos (faturamento) e campanhas por tag (investido). search_path fixo; revogadas de anon/authenticated.
+
+### Etapa 1 — Tela Central ✅ (migration `0018`)
+- [x] **`central_summary(from,to)`**: cabeça completa (investido, faturamento, lucro, ROAS, CAC total/principal, ticket, taxa de reembolso nº/valor, nº vendas total/principal) + **faturamento por papel** + funil (connect/ida ao checkout/conv checkout/conv funil). Fallback de usabilidade: sem tag = todas as campanhas; sem produto incluído = todos.
+- [x] **`central_timeseries(from,to)`**: diário (gasto, faturamento, lucro, ROAS) no mesmo escopo.
+- [x] **Validado com dados reais** (jun/2026, 2 produtos incluídos):
+  - `net_revenue` 6587,23 = principal 5508,12 + order_bump 1079,11 → **Σ papéis = total** ✅
+  - gross−refunded = net ✅; ROAS/CAC/ticket/taxa de reembolso conferem na conta ✅
+  - **Filtro por tag funciona**: `[GEO-VOZ-02]` derruba o investido (14.514 → 12.900, tira `[CP]`/`[WWA]`) e escopa os eventos do funil; faturamento dos incluídos inalterado.
+- ⚠️ **Achado real (não é bug):** `checkout_conv` pode dar **>1** porque o rastreio ainda é **parcial** (poucos eventos `checkout_iniciado` vs muitas vendas reais do webhook) e, com tag vazia, investido/eventos = conta toda enquanto faturamento = só incluídos. Alinha quando: (a) a tag for setada e (b) o `t.js` cobrir mais páginas do funil. As métricas financeiras não são afetadas.
+
+### Etapa 2 — falta
+- [ ] `origem_overview` (rastreadas/não, organic/meta, por source/medium).
+- [ ] `customers_list` + `customer_history` (Tela 2, por e-mail).
+- [ ] `campaigns_table(level, parent_id, from, to)` (estilo gerenciador, todas as colunas §8.3 + reembolso por origem) e `creatives_consolidated`.
+
+---
+
+## Fase V2-4 — Front-end: Tela Central ✅ (construída)
+
+> Fatia vertical: como a camada de dados da Central ficou pronta (V2-3 p1), construímos a tela já, pra virar o primeiro marco publicável.
+
+### Feito
+- [x] **Rota `/central`** (atrás do login, mesmo design system): cartões (Investido, Faturamento, Lucro, ROAS, Ticket, Custo/venda total e principal, Taxa de reembolso, Nº vendas total e principal) + **faturamento por papel** (com % de cada) + **funil** (connect/ida ao checkout/conv checkout/conv funil) + **gráfico temporal** + **reembolso**.
+- [x] **`lib/central.ts`** (server-only): chama `central_summary`/`central_timeseries` via service_role + lê o escopo atual (produtos incluídos + tags). `resolveRange` (preset 7/14/30/90 ou intervalo livre).
+- [x] **Filtro de data persistente** (`date-filter.tsx`) via URL — base do "filtros persistem entre telas". Escopo de produto/campanha vem da config (`/configuracoes`), mostrado no cabeçalho com link pra editar.
+- [x] **Gráfico temporal** (`timeseries-chart.tsx`): SVG próprio, **sem dependência nova** — 4 séries (gasto/faturamento/lucro no eixo R$ + ROAS no eixo secundário), gridlines, legenda.
+- [x] Link "Central (v2)" no topo do dashboard v1; `lint` + `build` limpos.
+- [ ] **Validação visual** (§8.1): no deploy do marco (preview local quebra com Turbopack+nvm, como na v1).
 
 ---
 

@@ -120,7 +120,11 @@
       utm_campaign: pick(p, "utm_campaign"),
       utm_term: pick(p, "utm_term"),
       utm_content: pick(p, "utm_content"),
-      fbclid: pick(p, "fbclid", 512)
+      fbclid: pick(p, "fbclid", 512),
+      // Cookies do Meta (quando o pixel está na página). Lidos AQUI porque são
+      // cookies do domínio do funil — o nosso servidor (outra origem) não os vê.
+      fbp: readCookie("_fbp"),
+      fbc: readCookie("_fbc")
     };
   }
   function send(payload) {

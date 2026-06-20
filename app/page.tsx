@@ -57,6 +57,18 @@ export default async function Dashboard({
         </div>
         <div className="flex items-center gap-3">
           <RefreshButton />
+          <Link
+            href="/central"
+            className="rounded-lg border border-black/[.12] px-4 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
+          >
+            Central (v2)
+          </Link>
+          <Link
+            href="/configuracoes"
+            className="rounded-lg border border-black/[.12] px-4 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
+          >
+            ⚙️ Configurações
+          </Link>
           <LogoutButton />
         </div>
       </header>

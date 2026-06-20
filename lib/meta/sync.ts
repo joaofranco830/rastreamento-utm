@@ -1,6 +1,12 @@
 import "server-only";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { fetchInsights, extractAction, type MetaInsightRow } from "@/lib/meta/client";
+import {
+  fetchInsights,
+  fetchEntityStatuses,
+  extractAction,
+  extractMetric,
+  type MetaInsightRow,
+} from "@/lib/meta/client";
 
 /**
  * Sincroniza os insights do Meta para a nossa base (ADR-2):
@@ -37,22 +43,44 @@ export async function runMetaSync(sinceDays = 14): Promise<SyncResult> {
   try {
     const rows = await fetchInsights(sinceDays);
 
+    // status de veiculação por nível (endpoint separado dos insights)
+    const [campStatus, adsetStatus, adStatus] = await Promise.all([
+      fetchEntityStatuses("campaigns"),
+      fetchEntityStatuses("adsets"),
+      fetchEntityStatuses("ads"),
+    ]);
+
     // 2) hierarquia: upsert ad_account → campaigns → adsets → ads (resolve FKs)
     const accId = await upsertAdAccount(supa);
     const campMap = await upsertLevel(
       supa,
       "campaigns",
-      dedupe(rows, "campaign_id", (r) => ({ meta_id: r.campaign_id, name: r.campaign_name, ad_account_id: accId })),
+      dedupe(rows, "campaign_id", (r) => ({
+        meta_id: r.campaign_id,
+        name: r.campaign_name,
+        ad_account_id: accId,
+        effective_status: campStatus.get(r.campaign_id) ?? null,
+      })),
     );
     const adsetMap = await upsertLevel(
       supa,
       "adsets",
-      dedupe(rows, "adset_id", (r) => ({ meta_id: r.adset_id, name: r.adset_name, campaign_id: campMap.get(r.campaign_id) })),
+      dedupe(rows, "adset_id", (r) => ({
+        meta_id: r.adset_id,
+        name: r.adset_name,
+        campaign_id: campMap.get(r.campaign_id),
+        effective_status: adsetStatus.get(r.adset_id) ?? null,
+      })),
     );
     const adMap = await upsertLevel(
       supa,
       "ads",
-      dedupe(rows, "ad_id", (r) => ({ meta_id: r.ad_id, name: r.ad_name, adset_id: adsetMap.get(r.adset_id) })),
+      dedupe(rows, "ad_id", (r) => ({
+        meta_id: r.ad_id,
+        name: r.ad_name,
+        adset_id: adsetMap.get(r.adset_id),
+        effective_status: adStatus.get(r.ad_id) ?? null,
+      })),
     );
 
     // 3) meta_insights_daily (1 linha por ad+dia)
@@ -70,6 +98,10 @@ export async function runMetaSync(sinceDays = 14): Promise<SyncResult> {
           lpv: extractAction(r.actions, "landing_page_view"),
           ic: extractAction(r.actions, "omni_initiated_checkout", "offsite_conversion.fb_pixel_initiate_checkout"),
           purchases: extractAction(r.actions, "omni_purchase", "offsite_conversion.fb_pixel_purchase"),
+          video_3s: extractMetric(r.video_3_sec_watched_actions),
+          video_p75: extractMetric(r.video_p75_watched_actions),
+          video_p95: extractMetric(r.video_p95_watched_actions),
+          video_plays: extractMetric(r.video_play_actions),
           synced_at: new Date().toISOString(),
         };
       })
