@@ -43,7 +43,7 @@
 | V2-3 | Camada de dados (funções de dashboard) | 🔄 em andamento (Central ✅ — falta origem/clientes/campanhas) |
 | V2-4 | Front-end: Tela Central | ✅ construída (rota /central; validação visual no deploy) |
 | V2-5 | Front-end: Tela Origem das UTMs | ✅ construída (rota /origem: origem + clientes expansíveis) |
-| V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ⏳ não iniciada |
+| V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ✅ construída (rota /campanhas: drill-down + todas as colunas + criativos) |
 | V2-7 | Retenção + endurecimento | ⏳ não iniciada |
 
 ---
@@ -347,8 +347,12 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - [x] **`origem_overview(from,to)`**: rastreadas vs não rastreadas, por classe (organic/paid_meta/...), por source/medium. Validado: **rastreadas (7) + não rastreadas (120) = 127 = total**; net bate com a Central. Achado real: só 7/127 vendas do Geografia estão atribuídas (rastreio parcial).
 - [x] **`customers_list(from,to)`** + **`customer_history(email)`**: 1 linha por e-mail. Validado: 151 compras → **137 clientes únicos** (12 recorrentes); consolidação por e-mail correta.
 
-### Etapa 3 — falta
-- [ ] `campaigns_table(level, parent_id, from, to)` (estilo gerenciador, todas as colunas §8.3 + reembolso por origem) e `creatives_consolidated`.
+### Etapa 3 — Campanhas ✅ (migration `0020`)
+- [x] **`campaigns_table(level, parent_id, from, to)`**: estilo gerenciador, filtrável por nível (campaign/adset/creative) + drill-down por `parent_id`. Retorna agregados-base por entidade (gasto, faturamento atribuído, compras total/principal, reembolso por origem, impressões, cliques, vídeo 3s/p75/p95/plays, pageviews, checkouts) — a tela calcula os ratios da §7. Validado: gasto idêntico nos 3 níveis (R$ 12.900 = escopo da tag); 30 conjuntos, 85 anúncios.
+- [x] **`creatives_consolidated(from, to)`**: por NOME de criativo across campanhas. Validado: 85 anúncios → 22 criativos; faturamento R$ 291 = as 7 vendas rastreadas.
+- Mapeamento venda→entidade: ad_id OU origin (utm_content→anúncio, utm_term→conjunto, utm_campaign→campanha). Funil por dimensão de UTM do touchpoint.
+
+**Camada de dados (V2-3) — completa.** Falta a tela Campanhas (V2-6) e a retenção (V2-7).
 
 ---
 
