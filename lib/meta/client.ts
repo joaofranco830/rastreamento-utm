@@ -157,18 +157,37 @@ export async function fetchEntityStatuses(
   return m;
 }
 
-/** Soma o `value` de um campo de action (vídeo). Prefere a janela 7d_click. */
+/**
+ * Soma o valor TOTAL de um campo de action de vídeo. Vídeo NÃO é métrica de
+ * conversão — usar o total (`value`), nunca a janela de atribuição (7d_click),
+ * senão plays/p75 ficam inconsistentes (retenção dá >100%).
+ */
 export function extractMetric(
   arr?: Array<{ value?: string; [w: string]: unknown }>,
 ): number {
   if (!arr || arr.length === 0) return 0;
   let sum = 0;
   for (const a of arr) {
-    const raw = (a[META_ATTR_WINDOW] as string) ?? a.value ?? "0";
-    const n = Number(raw);
+    const n = Number(a.value ?? "0");
     if (isFinite(n)) sum += n;
   }
   return Math.round(sum);
+}
+
+/** Igual a extractAction, mas usa o TOTAL (sem janela) — para vídeo (video_view). */
+export function extractActionTotal(
+  actions: MetaInsightRow["actions"],
+  ...types: string[]
+): number {
+  if (!actions) return 0;
+  for (const type of types) {
+    const a = actions.find((x) => x.action_type === type);
+    if (a) {
+      const n = Math.round(Number(a.value ?? "0"));
+      return isFinite(n) ? n : 0;
+    }
+  }
+  return 0;
 }
 
 /** Extrai o valor de um action_type (prefere a janela 7d_click; senão o total). */

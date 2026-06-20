@@ -13,6 +13,8 @@
 > - **V2 é o padrão:** `/` redireciona pra `/central`; o dashboard v1 foi pra `/v1` (link discreto em Configurações) — acabou a confusão "v1×v2" que mostrava a conta inteira. Barra de navegação V2 nova (Central · Origem · **Configurações** em destaque · Atualizar Meta · Sair).
 > - **Performance:** funções movidas pra **gru1 (São Paulo)** via `preferredRegion`, ao lado do Supabase (sa-east-1) — corta a latência cross-region de cada clique.
 > - **Confirmado:** com a config do usuário (tag `[GEO-VOZ-02]` + 2 produtos), a V2 mostra investido R$ 12.900 e faturamento R$ 6.587 (escopo correto). Os R$ 23k eram a v1.
+> - **Vídeo corrigido:** o sync puxava vídeo com a janela `7d_click` (valor atribuído, pequeno) → plays minúsculo, retenção >100%. Agora usa o TOTAL (`value`). Re-sync ("Atualizar Meta") repopula correto.
+> - **Campanhas estilo gerenciador:** tela trocada por árvore expansível (campanha ▸ conjuntos ▸ anúncios), várias abertas ao mesmo tempo, com colunas de vídeo cru (3s/plays/75%).
 >
 > ## 🚦 Status
 > - **v1 — CONCLUÍDA e em produção** (Fases 0→6): app na Vercel, webhook Hotmart, sync Meta (cron 6h), dashboard com **vendas reais**.
