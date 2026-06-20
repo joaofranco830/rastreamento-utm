@@ -1,7 +1,10 @@
 # CLAUDE.md — Sistema de Rastreamento por UTM
 
 > Este é o **briefing persistente** do projeto. Você (Claude) lê este arquivo em toda sessão.
-> A **fonte de verdade do desenho** é o arquivo `arquitetura-rastreamento-utm-v1.md` (versão 1.1). Em qualquer conflito entre este briefing e a arquitetura, **a arquitetura prevalece** — e me avise da divergência.
+> **Fonte de verdade do desenho:**
+> - **v1 (base, concluída e no ar):** `arquitetura-rastreamento-utm-v1.md` (versão 1.1).
+> - **v2 (em execução AGORA):** `arquitetura-rastreamento-utm-v2.md` — **estende** a v1 (migrations aditivas, mesma stack). **Em conflito, a v2 manda** para o trabalho atual; a v1 segue válida no que a v2 não altera.
+> Em qualquer conflito entre este briefing e a arquitetura vigente, **a arquitetura prevalece** — e me avise da divergência.
 
 ---
 
@@ -9,7 +12,9 @@
 
 Uma ferramenta própria de rastreamento por UTM para funis de tráfego direto de infoprodutos. Ela liga o **clique no anúncio (UTM) → page view → checkout → compra** usando um script de rastreio próprio, integra com o **Meta Ads** (métricas de anúncio) e com a **Hotmart via Webhook 2.0** (vendas/reembolsos como fonte de verdade do faturamento), e apresenta tudo num **dashboard** com métricas centrais (investido, vendas líquidas, faturamento líquido, ROAS), métricas de funil e reconciliação "nosso rastreio × Meta". Detalhe completo na arquitetura.
 
-Uso inicial: apenas eu (single-user). Multi-usuário é v2.
+Uso: apenas eu (single-user). **Multi-usuário/SaaS é v3–v5 (fora de escopo agora).**
+
+> **Status atual:** v1 **concluída e em produção** (Vercel + Supabase + webhook Hotmart + sync Meta + dashboard, **com vendas reais entrando**). Código no **GitHub (público):** https://github.com/joaofranco830/rastreamento-utm. **Estamos agora na v2** — ver `arquitetura-rastreamento-utm-v2.md` (plano de fases V2-0 → V2-7 na §11).
 
 ---
 
@@ -20,7 +25,7 @@ Uso inicial: apenas eu (single-user). Multi-usuário é v2.
 - **Deploy:** Vercel.
 - **Script de rastreio:** JS vanilla minúsculo, servido da edge/CDN.
 - **Integrações:** Meta Marketing API (server-side) e Hotmart Webhook 2.0.
-- Sem Docker/Kubernetes nesta v1.
+- Sem Docker/Kubernetes (v1 e v2).
 
 ---
 
@@ -39,7 +44,7 @@ Uso inicial: apenas eu (single-user). Multi-usuário é v2.
 ## 4. Como trabalhar comigo
 
 - **Sou "vibe coder":** sei o que quero, mas não sou dev experiente e não tenho fluência em terminal. **Explique decisões em linguagem simples** e me guie passo a passo.
-- **Construa FASE POR FASE** (Fase 0 → 6 da arquitetura). **Não pule fases** nem adiante features de v2.
+- **Construa FASE POR FASE.** v1: Fases 0→6 (✅ concluídas). v2: **Fases V2-0 → V2-7** (arquitetura v2 §11). **Não pule fases** nem adiante features de v3+ (multi-usuário, automações, jornada completa).
 - **Antes de cada fase:** mostre um plano curto + a "definição de pronto"; **espere meu OK** antes de executar.
 - **PARE e peça confirmação** antes de: fazer deploy; operações destrutivas no banco (drop/delete/reset/migration destrutiva); apagar arquivos; instalar dependências pesadas; mudar a stack; mexer em segredos ou permissões.
 - **Mantenha o escopo na fase atual.** Se tiver uma ideia de v2, anote, não implemente.
@@ -68,7 +73,8 @@ Uso inicial: apenas eu (single-user). Multi-usuário é v2.
   /migrations   # schema versionado
 PROGRESSO.md    # o que já foi feito / o que falta
 CLAUDE.md       # este arquivo
-arquitetura-rastreamento-utm-v1.md  # desenho (fonte de verdade)
+arquitetura-rastreamento-utm-v1.md  # desenho v1 (base concluída)
+arquitetura-rastreamento-utm-v2.md  # desenho v2 (em execução — fonte de verdade vigente)
 ```
 
 ---
@@ -80,7 +86,7 @@ arquitetura-rastreamento-utm-v1.md  # desenho (fonte de verdade)
 - **Idempotência + validação de assinatura** em todo webhook.
 - **Datas/fuso:** fixar o timezone do negócio; janela de atribuição = 7 dias.
 - **Testar o caminho crítico** (atribuição determinística, idempotência do webhook, cálculo líquido com reembolso) **antes** de marcar uma fase como pronta.
-- Nada de `localStorage`/segredos no client além do `visitor_id` (que é não sensível).
+- No **client**, nada de segredos; `localStorage` guarda só o `visitor_id` (não sensível). **PII (v2):** dados do comprador/visitante são guardados **crus, mas só no servidor** (Postgres), protegidos por **RLS server-only** + **retenção curta** (ADR-v2-3). **Nunca** expor PII ao client.
 
 ---
 
@@ -93,22 +99,35 @@ arquitetura-rastreamento-utm-v1.md  # desenho (fonte de verdade)
 - Testes: `TODO` (a configurar nas fases com caminho crítico — Fases 2/3)
 - Lint: `npm run lint`
 - Migrations: arquivos em `supabase/migrations/`. Banco na nuvem (projeto `rastreamento-utm`, org FRANCO ADVERTISING, região sa-east-1). Aplicar via painel Supabase ou `npx supabase db push` quando o projeto estiver linkado.
-- Deploy: `TODO` (Vercel — fase futura; ainda não fizemos deploy)
+- Deploy: **NO AR na Vercel** → https://rastreamento-utm.vercel.app (projeto `rastreamento-utm`). Webhook Hotmart + `/api/collect` em produção. Redeploy via Vercel CLI (exige token da Vercel na hora de publicar).
+- GitHub: **repo público** https://github.com/joaofranco830/rastreamento-utm (remote `origin`, branch `main`). Push exige um token (PAT) gerado na hora — **não** fica salvo no `.git/config`.
 
 ---
 
 ## 8. Decisões fixadas e o que está adiado
 
-**Fixado (v1):** last-click janela 7 dias · ROAS = "lucro dos anúncios" · `visitor_id` carregado no `src` da Hotmart · sync do Meta = 6h deslogado + fetch no login + 30 min logado (aba ativa) + botão refresh · 1 conta de anúncio.
+**Fixado (v1, concluída):** last-click janela 7 dias · ROAS = "lucro dos anúncios" · `visitor_id` no `src` da Hotmart · sync do Meta = 6h (cron pg_cron) + on-demand + botão refresh · 1 conta de anúncio.
 
-**Adiado para v2 (NÃO implementar agora, mas preparar quando indicado):**
-- **Jornada do cliente** (first touch → caminho → conversão) — **mas já gravar a tabela `touchpoints` desde a Fase 1**, para não perder dado.
-- **Modelo de custo/lucro monetário** (COGS, taxas, impostos).
-- **Multi-usuário / multi-cliente**, alertas, automações, outras fontes (Google/TikTok), API pública.
+**Em execução AGORA (v2 — detalhe em `arquitetura-rastreamento-utm-v2.md`):**
+- Seleção de **produtos** (registry `product_id` + papel) e **campanhas por TAG** no nome → escopo do "investido"/ROAS por produto.
+- **Captura ampliada + PII crua server-side** (IP/geo/device/UA/`fbp`/`fbc` no visitante; comprador no webhook) e associação comprador↔visitante (ADR-v2-3/4).
+- Atribuição em 3 níveis: campanha (nome) / conjunto (**ID** via `utm_term`) / criativo (nome).
+- Sync do Meta ampliado (vídeo + `link_clicks` + `effective_status`).
+- 3 telas novas (Central, Origem das UTMs, Campanhas estilo gerenciador) lendo de funções/rollups.
+- Retenção 3–4 meses com poda de eventos brutos (mantém `orders` + agregados diários).
+- **A v2 só MOSTRA dados** — zero automação/alerta/ação.
+
+**Adiado para v3+ (NÃO implementar agora):**
+- **Jornada do cliente** completa (first touch → caminho → conversão) — a v2 só prepara a base (`touchpoints` + view de clientes).
+- **Modelo de custo/lucro monetário completo** (COGS, taxas, impostos) — v2 usa Lucro = Faturamento − Investido.
+- **Multi-usuário / SaaS**, alertas, automações, outras fontes (Google/TikTok), API pública.
+- Reconciliação visual Meta×nosso (ADR-v2-9) e `utm_content={{ad.id}}` (ADR-v2-5).
 
 ---
 
-## 9. A validar logo no início (sandbox Hotmart)
+## 9. Sandbox Hotmart — ✅ JÁ VALIDADO na v1 (histórico)
+
+> Confirmado com **venda real**: o `src` volta inalterado em `data.purchase.origin.src`; campos `src`/`sck`/`xcod` confirmados; Dash fácil (`sck`) e o nosso (`src`) convivem sem conflito. Mantido abaixo como registro.
 
 Antes de fechar a Fase 3 (atribuição), confirmar no ambiente de testes da Hotmart:
 - comprimento máximo real e tratamento de caixa (maiúscula/minúscula) do `src`/`sck`;

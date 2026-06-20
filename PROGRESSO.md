@@ -1,7 +1,12 @@
 # PROGRESSO — Sistema de Rastreamento por UTM
 
 > Registro do que já foi feito e do que falta. Atualizado a cada passo.
-> Fonte de verdade do desenho: `arquitetura-rastreamento-utm-v1.md`.
+> Fonte de verdade do desenho: **v1** `arquitetura-rastreamento-utm-v1.md` (base) · **v2** `arquitetura-rastreamento-utm-v2.md` (vigente).
+>
+> ## 🚦 Status
+> - **v1 — CONCLUÍDA e em produção** (Fases 0→6): app na Vercel, webhook Hotmart, sync Meta (cron 6h), dashboard com **vendas reais**.
+> - **Código no GitHub (público):** https://github.com/joaofranco830/rastreamento-utm
+> - **v2 — INICIANDO** (Fases V2-0 → V2-7): seleção de produto/campanha por tag, captura ampliada + PII server-side, atribuição em 3 níveis, sync Meta com vídeo, 3 telas novas, retenção/poda. **Só mostra dados** (zero automação). Plano em `arquitetura-rastreamento-utm-v2.md` §11.
 
 ---
 
@@ -16,6 +21,19 @@
 | 4 | Integração Meta | ✅ concluída (sync no ar + cron 6h) |
 | 5 | Dashboard | ✅ concluída (escopo v1, no ar) |
 | 6 | Endurecimento | ✅ concluída (no ar) |
+
+### v2 — em execução (detalhe em `arquitetura-rastreamento-utm-v2.md` §11)
+
+| Fase | Tema | Status |
+|---|---|---|
+| V2-0 | Config base (produtos + campanhas por tag + retenção) | ⏳ não iniciada |
+| V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ⏳ não iniciada |
+| V2-2 | Sync do Meta ampliado (vídeo + status) | ⏳ não iniciada |
+| V2-3 | Camada de dados (funções de dashboard) | ⏳ não iniciada |
+| V2-4 | Front-end: Tela Central | ⏳ não iniciada |
+| V2-5 | Front-end: Tela Origem das UTMs | ⏳ não iniciada |
+| V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ⏳ não iniciada |
+| V2-7 | Retenção + endurecimento | ⏳ não iniciada |
 
 ---
 
