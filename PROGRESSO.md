@@ -42,11 +42,11 @@
 | V2-0 | Config base (produtos + campanhas por tag + retenção) | ✅ concluída (migration 0015 + tela /configuracoes) |
 | V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ✅ código pronto (migration 0016 aplicada; validação ao vivo no marco/deploy) |
 | V2-2 | Sync do Meta ampliado (vídeo + status) | ✅ código pronto (migration 0017 aplicada; sync ao vivo no marco/deploy) |
-| V2-3 | Camada de dados (funções de dashboard) | 🔄 em andamento (Central ✅ — falta origem/clientes/campanhas) |
+| V2-3 | Camada de dados (funções de dashboard) | ✅ concluída (central/origem/clientes/campanhas/criativos) |
 | V2-4 | Front-end: Tela Central | ✅ construída (rota /central; validação visual no deploy) |
 | V2-5 | Front-end: Tela Origem das UTMs | ✅ construída (rota /origem: origem + clientes expansíveis) |
 | V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ✅ construída (rota /campanhas: drill-down + todas as colunas + criativos) |
-| V2-7 | Retenção + endurecimento | ⏳ não iniciada |
+| V2-7 | Retenção + endurecimento | ✅ concluída (poda pg_cron + advisors 0 erros) |
 
 ---
 
@@ -369,6 +369,27 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - [x] **Gráfico temporal** (`timeseries-chart.tsx`): SVG próprio, **sem dependência nova** — 4 séries (gasto/faturamento/lucro no eixo R$ + ROAS no eixo secundário), gridlines, legenda.
 - [x] Link "Central (v2)" no topo do dashboard v1; `lint` + `build` limpos.
 - [ ] **Validação visual** (§8.1): no deploy do marco (preview local quebra com Turbopack+nvm, como na v1).
+
+---
+
+## Fase V2-7 — Retenção + endurecimento ✅
+
+> Objetivo: podar eventos brutos antigos (manter o plano grátis) sem perder vendas/agregados. Última fase da V2.
+
+### Feito
+- [x] **Migration `0021`**: função `prune_raw_events()` (search_path fixo) apaga `tracking_events`/`touchpoints` mais velhos que `tracking_config.retention_days`. **Nunca** toca em `orders`, `meta_insights_daily` (agregados) nem `visitors`. Atribuição usa janela 7d + snapshot em `attributions.origin`, então podar toques antigos não afeta vendas/atribuições.
+- [x] **Cron diário** (`prune-raw-events`, 05:17 UTC) via pg_cron, ao lado do `meta-sync-6h`.
+- [x] **Validado:** rodei a poda → **0 apagados** (tudo é de junho, < 90d); dados intactos (351 eventos, 294 touchpoints, 437 orders). Roda em segurança.
+- [x] **Advisors de segurança: 0 erros** (só INFO "RLS sem política" intencional + 2 WARN pré-existentes pg_net/leaked-password). Nenhuma função com `search_path` mutável.
+
+---
+
+## ✅ V2 COMPLETA (Fases V2-0 → V2-7)
+
+Todas as fases concluídas e **no ar** (rastreamento-utm.vercel.app, região São Paulo, deploy automático no merge da main):
+- **V2-0** config (produtos + tag + retenção) · **V2-1** sinais + comprador · **V2-2** sync Meta vídeo/status · **V2-3** camada de dados · **V2-4/5/6** telas Central/Origem/Campanhas · **V2-7** poda.
+- Migrations 0015→0021. V2 é o padrão; v1 escondida em `/v1`.
+- **Pendência leve:** clicar "Atualizar Meta" 1x para re-sincronizar o vídeo com os valores corrigidos (o último sync foi antes do fix).
 
 ---
 
