@@ -3,6 +3,11 @@
 > Registro do que já foi feito e do que falta. Atualizado a cada passo.
 > Fonte de verdade do desenho: **v1** `arquitetura-rastreamento-utm-v1.md` (base) · **v2** `arquitetura-rastreamento-utm-v2.md` (vigente).
 >
+> ## 🚀 V2 NO AR (parcial) — desde 20/06
+> - **Git da Vercel conectado** → todo merge na `main` publica sozinho (deploy automático). Deploy de produção READY (~28s, sem erros de runtime).
+> - **No ar:** Tela **Central** (`/central`), Tela **Origem** (`/origem`), **Configurações** (`/configuracoes`) + V2-1 (webhook guardando comprador/produto, `/collect` com geo/fbp, `t.js` com `_fbp`/`_fbc`) + V2-2 (sync Meta com vídeo/status, ativa no próximo cron 6h ou botão "Atualizar Meta").
+> - **Falta:** V2-6 (Tela Campanhas) e V2-7 (retenção/poda).
+>
 > ## 🚦 Status
 > - **v1 — CONCLUÍDA e em produção** (Fases 0→6): app na Vercel, webhook Hotmart, sync Meta (cron 6h), dashboard com **vendas reais**.
 > - **Código no GitHub (público):** https://github.com/joaofranco830/rastreamento-utm
