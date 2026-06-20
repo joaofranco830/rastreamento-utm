@@ -29,7 +29,7 @@
 | V2-0 | Config base (produtos + campanhas por tag + retenção) | ✅ concluída (migration 0015 + tela /configuracoes) |
 | V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ✅ código pronto (migration 0016 aplicada; validação ao vivo no marco/deploy) |
 | V2-2 | Sync do Meta ampliado (vídeo + status) | ✅ código pronto (migration 0017 aplicada; sync ao vivo no marco/deploy) |
-| V2-3 | Camada de dados (funções de dashboard) | ⏳ não iniciada |
+| V2-3 | Camada de dados (funções de dashboard) | 🔄 em andamento (Central ✅ — falta origem/clientes/campanhas) |
 | V2-4 | Front-end: Tela Central | ⏳ não iniciada |
 | V2-5 | Front-end: Tela Origem das UTMs | ⏳ não iniciada |
 | V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ⏳ não iniciada |
@@ -316,6 +316,26 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - [x] `lint` + `build` limpos; migration aditiva aplicada (5 colunas em insights + status nos 3 níveis confirmadas).
 - [x] Nomes dos campos da Graph API v25 conferem (vídeo + `effective_status`).
 - [ ] **Sync ao vivo** (vídeo/status realmente populando): só no **deploy do marco** — o token do Meta está só na Vercel (não no ambiente local). O cron 6h passa a trazer os campos novos automaticamente após o deploy.
+
+---
+
+## Fase V2-3 — Camada de dados (funções de dashboard) 🔄 em andamento
+
+> Objetivo: funções de leitura para as 3 telas, líquido + coorte + fuso SP, escopadas por produtos incluídos (faturamento) e campanhas por tag (investido). search_path fixo; revogadas de anon/authenticated.
+
+### Etapa 1 — Tela Central ✅ (migration `0018`)
+- [x] **`central_summary(from,to)`**: cabeça completa (investido, faturamento, lucro, ROAS, CAC total/principal, ticket, taxa de reembolso nº/valor, nº vendas total/principal) + **faturamento por papel** + funil (connect/ida ao checkout/conv checkout/conv funil). Fallback de usabilidade: sem tag = todas as campanhas; sem produto incluído = todos.
+- [x] **`central_timeseries(from,to)`**: diário (gasto, faturamento, lucro, ROAS) no mesmo escopo.
+- [x] **Validado com dados reais** (jun/2026, 2 produtos incluídos):
+  - `net_revenue` 6587,23 = principal 5508,12 + order_bump 1079,11 → **Σ papéis = total** ✅
+  - gross−refunded = net ✅; ROAS/CAC/ticket/taxa de reembolso conferem na conta ✅
+  - **Filtro por tag funciona**: `[GEO-VOZ-02]` derruba o investido (14.514 → 12.900, tira `[CP]`/`[WWA]`) e escopa os eventos do funil; faturamento dos incluídos inalterado.
+- ⚠️ **Achado real (não é bug):** `checkout_conv` pode dar **>1** porque o rastreio ainda é **parcial** (poucos eventos `checkout_iniciado` vs muitas vendas reais do webhook) e, com tag vazia, investido/eventos = conta toda enquanto faturamento = só incluídos. Alinha quando: (a) a tag for setada e (b) o `t.js` cobrir mais páginas do funil. As métricas financeiras não são afetadas.
+
+### Etapa 2 — falta
+- [ ] `origem_overview` (rastreadas/não, organic/meta, por source/medium).
+- [ ] `customers_list` + `customer_history` (Tela 2, por e-mail).
+- [ ] `campaigns_table(level, parent_id, from, to)` (estilo gerenciador, todas as colunas §8.3 + reembolso por origem) e `creatives_consolidated`.
 
 ---
 
