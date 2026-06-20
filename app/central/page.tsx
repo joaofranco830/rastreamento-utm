@@ -71,6 +71,12 @@ export default async function CentralPage({
         </div>
         <div className="flex items-center gap-3">
           <Link
+            href={`/origem?from=${d.from}&to=${d.to}`}
+            className="rounded-lg border border-black/[.12] px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
+          >
+            Origem
+          </Link>
+          <Link
             href="/"
             className="rounded-lg border border-black/[.12] px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
           >

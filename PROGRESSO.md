@@ -31,7 +31,7 @@
 | V2-2 | Sync do Meta ampliado (vídeo + status) | ✅ código pronto (migration 0017 aplicada; sync ao vivo no marco/deploy) |
 | V2-3 | Camada de dados (funções de dashboard) | 🔄 em andamento (Central ✅ — falta origem/clientes/campanhas) |
 | V2-4 | Front-end: Tela Central | ✅ construída (rota /central; validação visual no deploy) |
-| V2-5 | Front-end: Tela Origem das UTMs | ⏳ não iniciada |
+| V2-5 | Front-end: Tela Origem das UTMs | ✅ construída (rota /origem: origem + clientes expansíveis) |
 | V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ⏳ não iniciada |
 | V2-7 | Retenção + endurecimento | ⏳ não iniciada |
 
@@ -332,9 +332,11 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
   - **Filtro por tag funciona**: `[GEO-VOZ-02]` derruba o investido (14.514 → 12.900, tira `[CP]`/`[WWA]`) e escopa os eventos do funil; faturamento dos incluídos inalterado.
 - ⚠️ **Achado real (não é bug):** `checkout_conv` pode dar **>1** porque o rastreio ainda é **parcial** (poucos eventos `checkout_iniciado` vs muitas vendas reais do webhook) e, com tag vazia, investido/eventos = conta toda enquanto faturamento = só incluídos. Alinha quando: (a) a tag for setada e (b) o `t.js` cobrir mais páginas do funil. As métricas financeiras não são afetadas.
 
-### Etapa 2 — falta
-- [ ] `origem_overview` (rastreadas/não, organic/meta, por source/medium).
-- [ ] `customers_list` + `customer_history` (Tela 2, por e-mail).
+### Etapa 2 — Origem + Clientes ✅ (migration `0019`)
+- [x] **`origem_overview(from,to)`**: rastreadas vs não rastreadas, por classe (organic/paid_meta/...), por source/medium. Validado: **rastreadas (7) + não rastreadas (120) = 127 = total**; net bate com a Central. Achado real: só 7/127 vendas do Geografia estão atribuídas (rastreio parcial).
+- [x] **`customers_list(from,to)`** + **`customer_history(email)`**: 1 linha por e-mail. Validado: 151 compras → **137 clientes únicos** (12 recorrentes); consolidação por e-mail correta.
+
+### Etapa 3 — falta
 - [ ] `campaigns_table(level, parent_id, from, to)` (estilo gerenciador, todas as colunas §8.3 + reembolso por origem) e `creatives_consolidated`.
 
 ---
