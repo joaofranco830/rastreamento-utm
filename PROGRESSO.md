@@ -26,7 +26,7 @@
 
 | Fase | Tema | Status |
 |---|---|---|
-| V2-0 | Config base (produtos + campanhas por tag + retenção) | ⏳ não iniciada |
+| V2-0 | Config base (produtos + campanhas por tag + retenção) | ✅ concluída (migration 0015 + tela /configuracoes) |
 | V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ⏳ não iniciada |
 | V2-2 | Sync do Meta ampliado (vídeo + status) | ⏳ não iniciada |
 | V2-3 | Camada de dados (funções de dashboard) | ⏳ não iniciada |
@@ -246,6 +246,34 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 ### Dívidas da Fase 1 endereçadas aqui
 - Rate limiting no `/collect` → **feito**.
 - Nome neutro do script/endpoint vs ad-block → **não alterado** (decisão: `t.js`/`/api/collect` já são neutros; renomear quebraria as instalações já no funil sem ganho real). Anotado caso ad-block vire problema medível.
+
+---
+
+## Fase V2-0 — Config base (produtos + campanhas por tag + retenção) ✅
+
+> Objetivo: criar a base de configuração da v2 — quais **produtos** entram no dash (com papel), qual **tag** filtra as campanhas do "investido", e a **retenção**. Só config; nada de automação.
+
+### Feito
+- [x] **Migration `0015_products_tracking_config.sql`** (100% aditiva): cria `products` e `tracking_config`. RLS ligado **sem política** (padrão v1). Nenhuma função nova (nada de search_path a fixar). Não toca em `orders`/`visitors`/`touchpoints`.
+  - `products`: `product_id` (PK, id Hotmart), `name`, `role` (check `principal/order_bump/upsell/downsell/other`, default `other`), `included` (bool default false), `created_at`, `updated_at`.
+  - `tracking_config` (single-row, `id=1`): `campaign_name_tags` (text[]), `retention_days` (int default **90**, check > 0), `updated_at`.
+- [x] **Seed dos 15 produtos reais** já vistos em `orders` (nomes do `raw_payload`), idempotente (`ON CONFLICT DO NOTHING` → não sobrescreve edições feitas na tela). Pré-marcados como **incluídos**: `7715052` Imersão Geografia da Voz (**principal**) e `7716106` Gravação da Imersão (**order_bump**). Os outros 13 ficam `included=false`/`other`.
+- [x] **Tela `/configuracoes`** (atrás do login, mesmo design system do dashboard): liga/desliga produtos + escolhe papel (salva sozinho); campo de texto pra digitar a(s) **tag(s)** de campanha (uma por linha; filtro = campanha cujo nome **contém** a tag); campo de **retenção** (dias). Link "⚙️ Configurações" no topo do dashboard.
+  - Leitura via `lib/config-store.ts` (admin/service_role, server-only). Gravação via server actions (`app/configuracoes/actions.ts`) que recheca login antes de escrever.
+- [x] **Decisão da tag (confirmada com o usuário):** campo de texto livre que ele mesmo escreve; só campanhas com a tag no nome entram no "investido"/ROAS. O **match** de fato (nome contém tag) será aplicado na camada de leitura nas Fases V2-3+.
+- [x] **Retenção baixa por padrão (90 dias)** para ficar no plano gratuito. A poda só liga na **V2-7**; aqui apenas guardamos o número. Vendas (`orders`) e agregados diários **nunca** são podados.
+
+### Divergências anotadas
+- A skill **frontend-design** (pedida pela arquitetura) **não está disponível neste ambiente** → a tela foi feita no design system já existente do dashboard, para manter consistência. Reaplicar a skill quando disponível.
+- Produção tem **15 produtos de nichos diferentes** (voz, criativos, coluna, sensualidade, música, comunidade), bem mais do que a arquitetura sugeria. O registry (`products.included`) resolve isso: o usuário liga só o que quer. Sem conflito com o desenho.
+
+### DoD — ✅
+- [x] `products` e `tracking_config` criadas com **RLS ligado e sem política** (advisor de segurança: **0 erros**; só os INFO "RLS sem política" intencionais).
+- [x] 15 produtos no registry; Imersão = `principal`/incluído e Gravação = `order_bump`/incluído; resto `included=false`.
+- [x] `tracking_config` com 1 linha; `retention_days=90`; tags começam vazias.
+- [x] Gravação/persistência validada com round-trip no banco (editar → ler → restaurar ao seed).
+- [x] `npm run lint` e `npm run build` limpos.
+- [ ] **Deploy na Vercel** — pendente (aguarda "ok" separado; a tela só aparece no ar após o deploy).
 
 ---
 
