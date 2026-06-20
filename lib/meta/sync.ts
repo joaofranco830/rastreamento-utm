@@ -98,7 +98,7 @@ export async function runMetaSync(sinceDays = 14): Promise<SyncResult> {
           lpv: extractAction(r.actions, "landing_page_view"),
           ic: extractAction(r.actions, "omni_initiated_checkout", "offsite_conversion.fb_pixel_initiate_checkout"),
           purchases: extractAction(r.actions, "omni_purchase", "offsite_conversion.fb_pixel_purchase"),
-          video_3s: extractMetric(r.video_3_sec_watched_actions),
+          video_3s: extractAction(r.actions, "video_view"),
           video_p75: extractMetric(r.video_p75_watched_actions),
           video_p95: extractMetric(r.video_p95_watched_actions),
           video_plays: extractMetric(r.video_play_actions),

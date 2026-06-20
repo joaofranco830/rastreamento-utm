@@ -1,5 +1,6 @@
 export const runtime = "nodejs"; // precisa do service_role (segredo) -> não edge
 export const dynamic = "force-dynamic"; // ingestão nunca é cacheada
+export const preferredRegion = "gru1"; // perto do Supabase (sa-east-1)
 
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { isValidVisitorId } from "@/lib/config";

@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCentral, resolveRange } from "@/lib/central";
 import { brl, inteiro, pct, mult } from "@/lib/format";
-import LogoutButton from "../logout-button";
+import Nav from "../nav";
 import DateFilter from "./date-filter";
 import TimeseriesChart from "./timeseries-chart";
 
@@ -57,36 +56,15 @@ export default async function CentralPage({
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
-      {/* Cabeçalho + navegação */}
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Central</h1>
-          <p className="text-sm text-zinc-500">
-            {d.from} a {d.to} · {d.scope.included_products}/{d.scope.total_products} produtos ·{" "}
-            {d.scope.tags.length ? `tags: ${d.scope.tags.join(", ")}` : "todas as campanhas"}{" "}
-            <Link href="/configuracoes" className="underline hover:no-underline">
-              configurar
-            </Link>
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/origem?from=${d.from}&to=${d.to}`}
-            className="rounded-lg border border-black/[.12] px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
-          >
-            Origem
-          </Link>
-          <Link
-            href="/"
-            className="rounded-lg border border-black/[.12] px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
-          >
-            Dashboard v1
-          </Link>
-          <LogoutButton />
-        </div>
-      </header>
+      <Nav active="/central" qs={`?from=${d.from}&to=${d.to}`} />
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-zinc-500">
+          {d.from} a {d.to} · {d.scope.included_products}/{d.scope.total_products} produtos ·{" "}
+          {d.scope.tags.length
+            ? `tag: ${d.scope.tags.join(", ")}`
+            : "todas as campanhas (defina uma tag em Configurações)"}
+        </p>
         <DateFilter from={d.from} to={d.to} dias={dias} />
       </div>
 

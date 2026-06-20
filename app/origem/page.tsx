@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getOrigem } from "@/lib/origem";
 import { resolveRange } from "@/lib/central";
 import { brl, inteiro, pct } from "@/lib/format";
-import LogoutButton from "../logout-button";
+import Nav from "../nav";
 import DateFilter from "../central/date-filter";
 import CustomersTable from "./customers-table";
 import { classLabel } from "./labels";
@@ -31,31 +30,12 @@ export default async function OrigemPage({
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
-      <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Origem das UTMs</h1>
-          <p className="text-sm text-zinc-500">
-            {from} a {to} · {inteiro(ov.total.sales)} vendas no escopo
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/central${qs}`}
-            className="rounded-lg border border-black/[.12] px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
-          >
-            Central
-          </Link>
-          <Link
-            href="/"
-            className="rounded-lg border border-black/[.12] px-3 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
-          >
-            Dashboard v1
-          </Link>
-          <LogoutButton />
-        </div>
-      </header>
+      <Nav active="/origem" qs={qs} />
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-zinc-500">
+          {from} a {to} · {inteiro(ov.total.sales)} vendas no escopo
+        </p>
         <DateFilter from={from} to={to} dias={dias} />
       </div>
 

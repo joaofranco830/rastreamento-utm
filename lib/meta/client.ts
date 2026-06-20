@@ -109,7 +109,7 @@ export interface MetaInsightRow {
   inline_link_clicks?: string;
   actions?: Array<{ action_type: string; value?: string; [w: string]: unknown }>;
   // Vídeo: cada campo é um array de actions com `value` (vazio em estático).
-  video_3_sec_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
+  // (views de 3s vêm de actions[action_type=video_view] — não há campo dedicado.)
   video_p75_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
   video_p95_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
   video_play_actions?: Array<{ value?: string; [w: string]: unknown }>;
@@ -124,7 +124,7 @@ export async function fetchInsights(sinceDays = 14): Promise<MetaInsightRow[]> {
     level: "ad",
     fields:
       "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,inline_link_clicks,actions," +
-      "video_3_sec_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_play_actions,date_start",
+      "video_p75_watched_actions,video_p95_watched_actions,video_play_actions,date_start",
     action_attribution_windows: JSON.stringify([META_ATTR_WINDOW]),
     time_increment: "1",
     time_range: JSON.stringify({ since: ymd(since), until: ymd(until) }),

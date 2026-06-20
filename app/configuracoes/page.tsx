@@ -27,10 +27,10 @@ export default async function ConfiguracoesPage() {
         </div>
         <div className="flex items-center gap-3">
           <Link
-            href="/"
+            href="/central"
             className="rounded-lg border border-black/[.12] px-4 py-2 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.2] dark:hover:bg-white/[.06]"
           >
-            ← Dashboard
+            ← Voltar
           </Link>
           <LogoutButton />
         </div>
@@ -59,6 +59,16 @@ export default async function ConfiguracoesPage() {
       <section className="mb-6">
         <h2 className="mb-1 text-lg font-medium">Retenção de eventos brutos</h2>
         <RetentionForm initialDays={config.retention_days} />
+      </section>
+
+      {/* Acesso discreto ao dashboard antigo (v1) */}
+      <section className="mt-10 border-t border-black/[.06] pt-4 dark:border-white/[.08]">
+        <Link
+          href="/v1"
+          className="text-xs text-zinc-400 underline hover:text-zinc-600 dark:hover:text-zinc-300"
+        >
+          Abrir dashboard antigo (v1) — visão da conta inteira, sem filtros
+        </Link>
       </section>
     </main>
   );

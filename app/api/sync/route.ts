@@ -1,6 +1,7 @@
 export const runtime = "nodejs"; // service_role + token Meta -> não edge
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // sync pode levar alguns segundos
+export const preferredRegion = "gru1"; // perto do Supabase (sa-east-1)
 
 import { NextResponse } from "next/server";
 import { runMetaSync } from "@/lib/meta/sync";

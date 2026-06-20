@@ -7,6 +7,7 @@ import { hashContact } from "@/lib/sales/contact-hash";
 
 export const runtime = "nodejs"; // node:crypto + service_role -> não edge
 export const dynamic = "force-dynamic"; // webhook nunca é cacheado
+export const preferredRegion = "gru1"; // perto do Supabase (sa-east-1)
 
 /**
  * POST /api/webhook/hotmart — receptor do Webhook 2.0 da Hotmart.

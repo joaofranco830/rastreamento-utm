@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   description: "Ferramenta de rastreamento por UTM para funis de tráfego",
 };
 
+// Roda as funções em São Paulo (gru1), ao lado do Supabase (sa-east-1) —
+// corta a latência de cada round-trip ao banco (antes ia/voltava de iad1/EUA).
+export const preferredRegion = "gru1";
+
 export default function RootLayout({
   children,
 }: Readonly<{
