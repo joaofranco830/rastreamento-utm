@@ -3,6 +3,17 @@
 > Registro do que já foi feito e do que falta. Atualizado a cada passo.
 > Fonte de verdade do desenho: **v1** `arquitetura-rastreamento-utm-v1.md` (base) · **v2** `arquitetura-rastreamento-utm-v2.md` (vigente).
 >
+> ## 🚀 V2 NO AR (parcial) — desde 20/06
+> - **Git da Vercel conectado** → todo merge na `main` publica sozinho (deploy automático). Deploy de produção READY (~28s, sem erros de runtime).
+> - **No ar:** Tela **Central** (`/central`), Tela **Origem** (`/origem`), **Configurações** (`/configuracoes`) + V2-1 (webhook guardando comprador/produto, `/collect` com geo/fbp, `t.js` com `_fbp`/`_fbc`) + V2-2 (sync Meta com vídeo/status, ativa no próximo cron 6h ou botão "Atualizar Meta").
+> - **Falta:** V2-6 (Tela Campanhas) e V2-7 (retenção/poda).
+>
+> ### Correções pós-deploy (20/06, feedback do uso real)
+> - **Bug do "Atualizar Meta":** a Graph API rejeitava `video_3_sec_watched_actions` (campo inválido) → sync inteiro falhava. Fix: removido; views de 3s vêm de `actions[video_view]`.
+> - **V2 é o padrão:** `/` redireciona pra `/central`; o dashboard v1 foi pra `/v1` (link discreto em Configurações) — acabou a confusão "v1×v2" que mostrava a conta inteira. Barra de navegação V2 nova (Central · Origem · **Configurações** em destaque · Atualizar Meta · Sair).
+> - **Performance:** funções movidas pra **gru1 (São Paulo)** via `preferredRegion`, ao lado do Supabase (sa-east-1) — corta a latência cross-region de cada clique.
+> - **Confirmado:** com a config do usuário (tag `[GEO-VOZ-02]` + 2 produtos), a V2 mostra investido R$ 12.900 e faturamento R$ 6.587 (escopo correto). Os R$ 23k eram a v1.
+>
 > ## 🚦 Status
 > - **v1 — CONCLUÍDA e em produção** (Fases 0→6): app na Vercel, webhook Hotmart, sync Meta (cron 6h), dashboard com **vendas reais**.
 > - **Código no GitHub (público):** https://github.com/joaofranco830/rastreamento-utm

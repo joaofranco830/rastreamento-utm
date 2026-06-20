@@ -16,7 +16,8 @@ export async function refreshMeta(): Promise<{ ok: boolean; skipped?: string; er
   if (!user) return { ok: false, error: "não autenticado" };
 
   const result = await runMetaSync();
-  revalidatePath("/");
+  revalidatePath("/central");
+  revalidatePath("/v1");
   if (!result.ok && !result.skipped) {
     // loga detalhe no servidor; ao client vai uma mensagem genérica.
     console.error("[refreshMeta] sync falhou:", result.error);
