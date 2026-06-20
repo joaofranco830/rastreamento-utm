@@ -31,7 +31,7 @@
 | V2-2 | Sync do Meta ampliado (vídeo + status) | ✅ código pronto (migration 0017 aplicada; sync ao vivo no marco/deploy) |
 | V2-3 | Camada de dados (funções de dashboard) | 🔄 em andamento (Central ✅ — falta origem/clientes/campanhas) |
 | V2-4 | Front-end: Tela Central | ✅ construída (rota /central; validação visual no deploy) |
-| V2-5 | Front-end: Tela Origem das UTMs | ⏳ não iniciada |
+| V2-5 | Front-end: Tela Origem das UTMs | ✅ construída (rota /origem: origem + clientes expansíveis) |
 | V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ⏳ não iniciada |
 | V2-7 | Retenção + endurecimento | ⏳ não iniciada |
 
