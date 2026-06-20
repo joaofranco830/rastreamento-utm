@@ -30,7 +30,7 @@
 | V2-1 | Atribuição ampliada (sinais + PII + enriquecimento) | ✅ código pronto (migration 0016 aplicada; validação ao vivo no marco/deploy) |
 | V2-2 | Sync do Meta ampliado (vídeo + status) | ✅ código pronto (migration 0017 aplicada; sync ao vivo no marco/deploy) |
 | V2-3 | Camada de dados (funções de dashboard) | 🔄 em andamento (Central ✅ — falta origem/clientes/campanhas) |
-| V2-4 | Front-end: Tela Central | ⏳ não iniciada |
+| V2-4 | Front-end: Tela Central | ✅ construída (rota /central; validação visual no deploy) |
 | V2-5 | Front-end: Tela Origem das UTMs | ⏳ não iniciada |
 | V2-6 | Front-end: Tela Campanhas (estilo gerenciador) | ⏳ não iniciada |
 | V2-7 | Retenção + endurecimento | ⏳ não iniciada |
@@ -336,6 +336,20 @@ Pesquisa + spec em **`docs/fase4-design.md`**. Precisa de você quando chegarmos
 - [ ] `origem_overview` (rastreadas/não, organic/meta, por source/medium).
 - [ ] `customers_list` + `customer_history` (Tela 2, por e-mail).
 - [ ] `campaigns_table(level, parent_id, from, to)` (estilo gerenciador, todas as colunas §8.3 + reembolso por origem) e `creatives_consolidated`.
+
+---
+
+## Fase V2-4 — Front-end: Tela Central ✅ (construída)
+
+> Fatia vertical: como a camada de dados da Central ficou pronta (V2-3 p1), construímos a tela já, pra virar o primeiro marco publicável.
+
+### Feito
+- [x] **Rota `/central`** (atrás do login, mesmo design system): cartões (Investido, Faturamento, Lucro, ROAS, Ticket, Custo/venda total e principal, Taxa de reembolso, Nº vendas total e principal) + **faturamento por papel** (com % de cada) + **funil** (connect/ida ao checkout/conv checkout/conv funil) + **gráfico temporal** + **reembolso**.
+- [x] **`lib/central.ts`** (server-only): chama `central_summary`/`central_timeseries` via service_role + lê o escopo atual (produtos incluídos + tags). `resolveRange` (preset 7/14/30/90 ou intervalo livre).
+- [x] **Filtro de data persistente** (`date-filter.tsx`) via URL — base do "filtros persistem entre telas". Escopo de produto/campanha vem da config (`/configuracoes`), mostrado no cabeçalho com link pra editar.
+- [x] **Gráfico temporal** (`timeseries-chart.tsx`): SVG próprio, **sem dependência nova** — 4 séries (gasto/faturamento/lucro no eixo R$ + ROAS no eixo secundário), gridlines, legenda.
+- [x] Link "Central (v2)" no topo do dashboard v1; `lint` + `build` limpos.
+- [ ] **Validação visual** (§8.1): no deploy do marco (preview local quebra com Turbopack+nvm, como na v1).
 
 ---
 
