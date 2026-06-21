@@ -3,7 +3,8 @@
 > Este é o **briefing persistente** do projeto. Você (Claude) lê este arquivo em toda sessão.
 > **Fonte de verdade do desenho:**
 > - **v1 (base, concluída e no ar):** `arquitetura-rastreamento-utm-v1.md` (versão 1.1).
-> - **v2 (em execução AGORA):** `arquitetura-rastreamento-utm-v2.md` — **estende** a v1 (migrations aditivas, mesma stack). **Em conflito, a v2 manda** para o trabalho atual; a v1 segue válida no que a v2 não altera.
+> - **v2 (concluída e no ar):** `arquitetura-rastreamento-utm-v2.md` — estendeu a v1 (migrations aditivas 0015→0021, mesma stack). Fases V2-0→V2-7 concluídas.
+> - **v3 (em planejamento):** a arquitetura será criada por IA de planejamento; ainda não existe doc. Escopo candidato em §8 ("adiado para v3+").
 > Em qualquer conflito entre este briefing e a arquitetura vigente, **a arquitetura prevalece** — e me avise da divergência.
 
 ---
@@ -14,7 +15,7 @@ Uma ferramenta própria de rastreamento por UTM para funis de tráfego direto de
 
 Uso: apenas eu (single-user). **Multi-usuário/SaaS é v3–v5 (fora de escopo agora).**
 
-> **Status atual:** v1 **concluída e em produção** (Vercel + Supabase + webhook Hotmart + sync Meta + dashboard, **com vendas reais entrando**). Código no **GitHub (público):** https://github.com/joaofranco830/rastreamento-utm. **Estamos agora na v2** — ver `arquitetura-rastreamento-utm-v2.md` (plano de fases V2-0 → V2-7 na §11).
+> **Status atual:** **v1 e v2 concluídas e em produção** (Vercel região São Paulo + Supabase + webhook Hotmart + sync Meta com vídeo/status + 3 telas novas — Central/Origem/Campanhas — + config + poda automática, **com vendas reais entrando**). Código no **GitHub (público):** https://github.com/joaofranco830/rastreamento-utm. **Próximo: planejar a v3** (ver `PROGRESSO.md` para o estado detalhado e §8 para o escopo candidato a v3+).
 
 ---
 
