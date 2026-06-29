@@ -42,9 +42,24 @@
     } catch {}
     return "/api/collect";
   }
+  // pixel_key do projeto (RAS-01/02). Fonte: window.__faPixelKey (shim de
+  // /p/{key}/t.js), data-pixel-key, ou o próprio caminho do src. Ausente -> null
+  // (Projeto Padrão no servidor). Robusto contra builders que removem data-*.
+  function derivePixelKey() {
+    try { if (window.__faPixelKey) return String(window.__faPixelKey).slice(0, 64); } catch (e) {}
+    var a = attr("data-pixel-key", null);
+    if (a) return String(a).slice(0, 64);
+    try {
+      var src = self && self.src ? self.src : "";
+      var m = src.match(/\/p\/([a-z0-9]+)\/t\.js/i);
+      if (m) return m[1].slice(0, 64);
+    } catch (e) {}
+    return null;
+  }
 
   var CONFIG = {
     endpoint: attr("data-endpoint", deriveEndpoint()),
+    pixelKey: derivePixelKey(),
     hotmartHosts: csv("data-hotmart-hosts", ["hotmart.com"]),
     checkoutUrlPatterns: csv("data-checkout-url", ["pay.hotmart.com", "/checkout", "/comprar"]),
     checkoutSelector: attr("data-checkout-selector", "")
@@ -111,6 +126,7 @@
     var p = new URLSearchParams(location.search);
     return {
       visitor_id: VID,
+      pixel_key: CONFIG.pixelKey,
       type: type,
       url: location.href.slice(0, 2048),
       page: location.pathname.slice(0, 1024),

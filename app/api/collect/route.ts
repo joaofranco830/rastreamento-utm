@@ -171,9 +171,22 @@ export async function POST(req: Request): Promise<Response> {
     const supa = getSupabaseAdmin();
     const nowIso = new Date().toISOString();
 
+    // Resolve o projeto pela pixel_key (RAS-01/02). Ausente/inválida -> Padrão (1).
+    // O t.js "pelado" não envia pixel_key -> cai no Projeto Padrão (backward-compat).
+    let projectId = 1;
+    const pixelKey = typeof p.pixel_key === "string" ? p.pixel_key : null;
+    if (pixelKey) {
+      const { data: px } = await supa
+        .from("project_pixels")
+        .select("project_id, active")
+        .eq("pixel_key", pixelKey)
+        .maybeSingle();
+      if (px && px.active) projectId = px.project_id as number;
+    }
+
     // 5) visitors: cria se novo (preserva first_touch); sempre atualiza last_touch.
     const { error: insErr } = await supa.from("visitors").upsert(
-      { visitor_id: visitorId, first_touch: nowIso, last_touch: nowIso },
+      { visitor_id: visitorId, first_touch: nowIso, last_touch: nowIso, project_id: projectId },
       { onConflict: "visitor_id", ignoreDuplicates: true },
     );
     if (insErr) throw insErr;
@@ -208,6 +221,7 @@ export async function POST(req: Request): Promise<Response> {
       if (!isDuplicate) {
         const { error: tpErr } = await supa.from("touchpoints").insert({
           visitor_id: visitorId,
+          project_id: projectId,
           ...utm,
           fbclid,
           referrer,
@@ -220,6 +234,7 @@ export async function POST(req: Request): Promise<Response> {
     // 7) tracking_event sempre. funnel_id fica null na Fase 1 (sem funis cadastrados).
     const { error: evErr } = await supa.from("tracking_events").insert({
       visitor_id: visitorId,
+      project_id: projectId,
       type,
       url,
       funnel_id: null,
