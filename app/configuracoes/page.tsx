@@ -113,8 +113,8 @@ export default async function ConfiguracoesPage() {
           <Link href="/em-producao?t=Importar+CSV" className="rounded-xl border border-dashed border-black/[.12] p-3 text-sm text-zinc-500 transition-colors hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.04]">
             🚧 Importar CSV (vendas Hotmart)
           </Link>
-          <Link href="/em-producao?t=Construtor+de+UTMs" className="rounded-xl border border-dashed border-black/[.12] p-3 text-sm text-zinc-500 transition-colors hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.04]">
-            🚧 Construtor de UTMs + verificador
+          <Link href="/configuracoes/utm" className="rounded-xl border border-black/[.1] p-3 text-sm font-medium transition-colors hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.04]">
+            🔗 Construtor de UTMs + verificador
           </Link>
           <Link href="/em-producao?t=Integração+Meta+(token)" className="rounded-xl border border-dashed border-black/[.12] p-3 text-sm text-zinc-500 transition-colors hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.04]">
             🚧 Integração Meta (token por projeto)
