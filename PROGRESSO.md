@@ -408,7 +408,16 @@ Todas as fases concluídas e **no ar** (rastreamento-utm.vercel.app, região Sã
 - [x] **Migration `0024`** (backfill): carimba todo o dado atual como Projeto Padrão (id=1) — escreve **só** `project_id`, nenhum valor real tocado. Cria funil **"Perpétuo — Geografia da Voz"** (`type='perpetuo'`) migrando a lente atual para `source_filters`: produtos `[7716106, 7715052]`, tag `[GEO-VOZ-02]`, recorrência `all`.
 - [x] **Migration `0024b`** (trava): `DEFAULT 1` + `NOT NULL` nas 14 colunas. Default mantém o app pré-V3-2 gravando no Padrão; NOT NULL impede linha sem tenant. Falha-segura (reverte se restar NULL).
 - [x] **Gate aprovado byte-a-byte:** `project_id IS NULL = 0` em todas; 702 pedidos / líquido R$ 41.873,74 / bruto 65.683,89 / estornado 23.810,15 / 576 e-mails únicos / 17 rastreadas + 685 não / 18 atribuições / investido R$ 14.950,87 — **idênticos** ao pré-backfill. 14/14 colunas NOT NULL confirmadas.
-- **Próximo (V3-2 — cofre + roteamento + pixel):** depende do dono adicionar `CREDENTIALS_MASTER_KEY` na Vercel. RPCs com `p_project_id`, `lib/crypto` (AES-GCM), migrar token Meta + Hottok para o cofre do Padrão, `endpoint_key`+`pixel_key`, roteador de webhook + `/collect` por chave, sync lendo do cofre. Inclui o 1º deploy de produção (PARAR p/ confirmar). Atenção: incluir `meta_sync_state` no escopo por projeto.
+### V3-2 — Cofre + roteamento de webhook/pixel por projeto ✅ (banco aplicado; app no preview)
+- [x] **Chave-mestra no Supabase Vault** (`credentials_master_key`) — ADR-v3-7a (não foi pro env da Vercel por bloqueio de rede do ambiente; Vault mantém a chave-raiz fora das tabelas SQL). Leitura validada.
+- [x] **Migration `0025`** (aditiva): `app_get_master_key()` (service_role only); `apply_hotmart_event(...,p_project_id default 1)` (webhook atual segue funcionando); `attribute_order` filtra/carimba por `project_id`; `prune_raw_events` por projeto; `meta_sync_state.project_id`; `endpoint_key`/`pixel_key` do Padrão gerados.
+- [x] **Migration `0025b`**: `set_project_credential`/`get_project_credential` (base64↔bytea, service_role only).
+- [x] **`lib/crypto`** (AES-256-GCM, chave do Vault c/ fallback env) + **`lib/credentials`** (cofre por projeto).
+- [x] **App:** `lib/sales/webhook` (handler compartilhado); `/api/webhook/hotmart` legada → Padrão (Hottok do cofre + auto-popula na 1ª chamada); `/api/webhook/hotmart/[endpoint_key]` por projeto; `/p/[pixel_key]/t.js` (pixel por projeto); `/api/collect` resolve `project_id` pela `pixel_key`; `t.js` envia `pixel_key`. **Backward-compat:** `t.js` pelado + webhook legado seguem no Padrão.
+- [x] **Validação local:** `tsc --noEmit` 0 erros + `next build` OK (3 rotas novas registradas).
+- **Adiado (V4):** sync do Meta por-projeto lendo o cofre (hoje usa env + `DEFAULT project_id=1`, correto p/ 1 projeto). Move do token Meta p/ o cofre vem junto.
+- **Estratégia de deploy:** acumular V3-x nesta branch/PR; **1 único deploy de produção no fim (merge na `main`)**, junto do flip da RLS (checkpoint #2). Migrations aditivas já no banco; produção atual intacta (lê via service_role).
+- **Próximo (V3-3 — checkpoint #2):** funções de dashboard com `p_project_id` + `SECURITY INVOKER`; app lê via sessão do usuário; **flip da RLS** (políticas por filiação) + teste de isolamento com 2º projeto sintético.
 
 ---
 
