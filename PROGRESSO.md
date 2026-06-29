@@ -393,7 +393,22 @@ Todas as fases concluídas e **no ar** (rastreamento-utm.vercel.app, região Sã
 
 ---
 
+## 🚧 V3 EM EXECUÇÃO (fundação multi-tenant)
+
+> Fonte de verdade: `arquitetura-rastreamento-utm-v3.md`. Recorte travado: fundação multi-cliente + re-acomodar o dado atual como **Projeto Padrão "Geografia da Voz"** + só Perpétuo + CSV + Construtor de UTMs. Só Hotmart. Cofre AES-GCM com chave fora do banco. Isolamento em defesa em profundidade (RLS por filiação na leitura; service_role na ingestão).
+> **Política de OK (definida pelo dono):** piloto automático com checkpoint só nos 2 momentos de risco — **backfill do dado real (V3-1)** e **flip da RLS + deploy (V3-3)**.
+> **Deploy:** automático no merge da `main` (sem token Vercel). Segredo novo: `CREDENTIALS_MASTER_KEY` (env Vercel, usado na V3-2).
+
+### V3-0 — Esqueleto de tenancy ✅ (aplicado em produção)
+- [x] **Migration `0022`** (aditiva): cria as 8 tabelas da fundação — `projects`, `app_users`, `project_members`, `project_credentials`, `project_endpoints`, `project_pixels`, `utm_link_sets`, `import_batches`. RLS ligado **sem política** (padrão v1/v2). **Nenhuma** tabela de dados tocada.
+- [x] **Seeds:** Projeto Padrão "Geografia da Voz" (id capturado dinamicamente), perfil **owner** (`j.guilherme830@icloud.com` → `3661d235-…`, `is_owner=true`) e filiação owner→Padrão (`admin`). Idempotentes.
+- [x] **DoD validado:** seeds criados (1 projeto / 1 owner / 1 membership); dados reais **idênticos** ao baseline (orders 702, tracking_events 476, touchpoints 357, visitors 360, order_events 1044, meta_insights_daily 1073, attributions 18); advisor sem **erro novo** (só INFO "RLS sem política" intencional nas tabelas novas + 2 WARN pré-existentes pg_net/leaked-password).
+- **Próximo (V3-1):** `project_id` (nullable) nas 14 tabelas + índices (migration `0023`) → **CHECKPOINT** → backfill para o Padrão + migração de `tracking_config`/`products`/`funnels` + gate de números (migration `0024`).
+
+---
+
 ## Descobertas / a validar (carregado da arquitetura)
+- **Inventário real no início da V3 (jun/2026):** orders 702, order_events 1044, tracking_events 476, touchpoints 357, visitors 360, meta_insights_daily 1073, attributions 18, campaigns 26, adsets 41, ads 131, products 15, ad_accounts 1, funnels 0, tracking_config 1. **+ tabela `meta_sync_state`** (trava do sync, não listada nas 14 do doc → entra no escopo por projeto na V3-2).
 - **Sandbox Hotmart** (antes da Fase 3): confirmar comprimento e caixa de `src`/`sck` e a forma exata do objeto `origin`.
 - **Reembolso parcial**: reduz faturamento, mantém conversão (padrão adotado).
 - **Restatement por coorte**: estorno deduz da data/origem da venda original (padrão adotado).
