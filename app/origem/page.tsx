@@ -4,7 +4,7 @@ import { getActiveProjectId } from "@/lib/tenant";
 import { getOrigem } from "@/lib/origem";
 import { resolveRange } from "@/lib/central";
 import { brl, inteiro, pct } from "@/lib/format";
-import Nav from "../nav";
+import Shell from "../shell";
 import DateFilter from "../central/date-filter";
 import CustomersTable from "./customers-table";
 import { classLabel } from "./labels";
@@ -25,12 +25,10 @@ export default async function OrigemPage({
   const { overview: ov, customers } = await getOrigem(projectId, from, to);
   const total = ov.total.sales || 0;
   const shareOf = (n: number) => (total > 0 ? n / total : 0);
-  const qs = `?from=${from}&to=${to}`;
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
-      <Nav active="/origem" qs={qs} />
-
+    <Shell active="/origem">
+      <div className="mx-auto w-full max-w-6xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-zinc-500">
           {from} a {to} · {inteiro(ov.total.sales)} vendas no escopo
@@ -108,6 +106,7 @@ export default async function OrigemPage({
         <h2 className="mb-3 text-sm font-medium text-zinc-500">Clientes (por e-mail) — clique para o histórico</h2>
         <CustomersTable customers={customers} />
       </section>
-    </main>
+      </div>
+    </Shell>
   );
 }

@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { resolveRange } from "@/lib/central";
 import { getCampaignsTable, getCreativesConsolidated } from "@/lib/campanhas";
-import Nav from "../nav";
+import Shell from "../shell";
 import DateFilter from "../central/date-filter";
 import CampaignsTree from "./campaigns-tree";
 import { CREATIVE_COLS } from "./columns";
@@ -21,7 +21,6 @@ export default async function CampanhasPage({
 
   const sp = await searchParams;
   const { from, to, dias } = resolveRange(sp);
-  const qs = `?from=${from}&to=${to}`;
 
   const [campaigns, creatives] = await Promise.all([
     getCampaignsTable(projectId, "campaign", null, from, to),
@@ -29,9 +28,8 @@ export default async function CampanhasPage({
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-[1400px] flex-1 px-5 py-8">
-      <Nav active="/campanhas" qs={qs} />
-
+    <Shell active="/campanhas">
+      <div className="mx-auto w-full max-w-[1400px]">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-zinc-500">
           {from} a {to} · clique no <span className="font-mono">▸</span> da campanha para abrir os conjuntos e anúncios
@@ -88,6 +86,7 @@ export default async function CampanhasPage({
         Compras/faturamento/funil usam o <b>nosso</b> last-click (só vendas rastreadas entram). Métricas de vídeo ficam
         vazias em anúncio estático. Conjunto casa por ID (<code>utm_term</code>), campanha/criativo por nome.
       </p>
-    </main>
+      </div>
+    </Shell>
   );
 }

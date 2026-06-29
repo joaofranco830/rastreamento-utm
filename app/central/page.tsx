@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { getCentral, resolveRange } from "@/lib/central";
 import { brl, inteiro, pct, mult } from "@/lib/format";
-import Nav from "../nav";
+import Shell from "../shell";
 import DateFilter from "./date-filter";
 import TimeseriesChart from "./timeseries-chart";
 
@@ -54,9 +54,8 @@ export default async function CentralPage({
   const roleTotal = ROLE_ORDER.reduce((acc, r) => acc + (s.revenue_by_role[r] ?? 0), 0);
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
-      <Nav active="/central" qs={`?from=${d.from}&to=${d.to}`} />
-
+    <Shell active="/central">
+      <div className="mx-auto w-full max-w-6xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-zinc-500">
           {d.from} a {d.to} · {d.scope.included_products}/{d.scope.total_products} produtos ·{" "}
@@ -132,6 +131,7 @@ export default async function CentralPage({
           <Card label="Taxa (valor)" value={pct(s.refund_rate_value)} />
         </div>
       </section>
-    </main>
+      </div>
+    </Shell>
   );
 }
