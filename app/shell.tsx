@@ -16,17 +16,9 @@ type Group = { title?: string; items: Item[] };
 
 const GROUPS: Group[] = [
   {
-    title: "Projeto ativo",
-    items: [
-      { href: "/central", label: "Central" },
-      { href: "/origem", label: "Origem das UTMs" },
-      { href: "/campanhas", label: "Campanhas" },
-    ],
-  },
-  {
     title: "Funis",
     items: [
-      { href: "/central", label: "Perpétuo", badge: "não 100%" },
+      { href: "/funil/perpetuo", label: "Perpétuo", badge: "não 100%" },
       { href: "/em-producao?t=Funil+High+Ticket", label: "High Ticket", soon: true },
       { href: "/em-producao?t=Funil+de+Assinaturas", label: "Assinaturas", soon: true },
       { href: "/em-producao?t=Funil+de+Lançamento", label: "Lançamento", soon: true },
