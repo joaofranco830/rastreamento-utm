@@ -403,7 +403,12 @@ Todas as fases concluídas e **no ar** (rastreamento-utm.vercel.app, região Sã
 - [x] **Migration `0022`** (aditiva): cria as 8 tabelas da fundação — `projects`, `app_users`, `project_members`, `project_credentials`, `project_endpoints`, `project_pixels`, `utm_link_sets`, `import_batches`. RLS ligado **sem política** (padrão v1/v2). **Nenhuma** tabela de dados tocada.
 - [x] **Seeds:** Projeto Padrão "Geografia da Voz" (id capturado dinamicamente), perfil **owner** (`j.guilherme830@icloud.com` → `3661d235-…`, `is_owner=true`) e filiação owner→Padrão (`admin`). Idempotentes.
 - [x] **DoD validado:** seeds criados (1 projeto / 1 owner / 1 membership); dados reais **idênticos** ao baseline (orders 702, tracking_events 476, touchpoints 357, visitors 360, order_events 1044, meta_insights_daily 1073, attributions 18); advisor sem **erro novo** (só INFO "RLS sem política" intencional nas tabelas novas + 2 WARN pré-existentes pg_net/leaked-password).
-- **Próximo (V3-1):** `project_id` (nullable) nas 14 tabelas + índices (migration `0023`) → **CHECKPOINT** → backfill para o Padrão + migração de `tracking_config`/`products`/`funnels` + gate de números (migration `0024`).
+### V3-1 — `project_id` em todas as tabelas + backfill ✅ (aplicado em produção — CHECKPOINT 1 aprovado)
+- [x] **Migration `0023`** (aditiva): `project_id` (nullable) + índice nas 14 tabelas de dados; `funnels` ganha `type` + `source_filters`.
+- [x] **Migration `0024`** (backfill): carimba todo o dado atual como Projeto Padrão (id=1) — escreve **só** `project_id`, nenhum valor real tocado. Cria funil **"Perpétuo — Geografia da Voz"** (`type='perpetuo'`) migrando a lente atual para `source_filters`: produtos `[7716106, 7715052]`, tag `[GEO-VOZ-02]`, recorrência `all`.
+- [x] **Migration `0024b`** (trava): `DEFAULT 1` + `NOT NULL` nas 14 colunas. Default mantém o app pré-V3-2 gravando no Padrão; NOT NULL impede linha sem tenant. Falha-segura (reverte se restar NULL).
+- [x] **Gate aprovado byte-a-byte:** `project_id IS NULL = 0` em todas; 702 pedidos / líquido R$ 41.873,74 / bruto 65.683,89 / estornado 23.810,15 / 576 e-mails únicos / 17 rastreadas + 685 não / 18 atribuições / investido R$ 14.950,87 — **idênticos** ao pré-backfill. 14/14 colunas NOT NULL confirmadas.
+- **Próximo (V3-2 — cofre + roteamento + pixel):** depende do dono adicionar `CREDENTIALS_MASTER_KEY` na Vercel. RPCs com `p_project_id`, `lib/crypto` (AES-GCM), migrar token Meta + Hottok para o cofre do Padrão, `endpoint_key`+`pixel_key`, roteador de webhook + `/collect` por chave, sync lendo do cofre. Inclui o 1º deploy de produção (PARAR p/ confirmar). Atenção: incluir `meta_sync_state` no escopo por projeto.
 
 ---
 
