@@ -429,7 +429,13 @@ Todas as fases concluídas e **no ar** (rastreamento-utm.vercel.app, região Sã
 - [x] **Admin global (V3-4, parte):** `/admin` (owner) — visão de todos os projetos + membros.
 - [x] **Hub Configurar (V3-6, parte):** Pixel do projeto (snippet `/p/{key}/t.js` + status recebendo/sem sinal) e Integração Hotmart (URL única `/api/webhook/hotmart/{key}` + passo a passo). `CopyField` p/ copiar.
 - **Pendente (marcado 🚧 "Em produção", próximas levas):** CRUD de projeto/usuário + gestão de membros (writes); salvar Hottok/token Meta no cofre (forms); **Importar CSV** (INT-07); **Construtor de UTMs + verificador** (com guarda anti-SSRF). Tudo com placeholder no lugar — nav completa, nada quebrado.
-- **Falta p/ fechar a V3:** V3-8 endurecimento (advisors, índices, re-teste de isolamento) + **deploy de produção único** (merge na `main`) — o último checkpoint, **só com OK do dono**.
+### V3-7 + V3-6 (resto) + V3-4 (resto) + V3-8 ✅ (app no preview; banco endurecido)
+- [x] **V3-7 Construtor de UTMs + verificador** (`/configuracoes/utm`): gera pago/orgânico, edita, salva tabelas reabríveis (`utm_link_sets`); verificador com guarda anti-SSRF.
+- [x] **V3-6 Importar CSV** (`/configuracoes/importar`): mapeamento de colunas + dedup por `transaction` + histórico. **Forms de credencial** (Hottok + token Meta) cifrando no cofre.
+- [x] **V3-4 CRUD de Admin** (`/admin`): criar projeto (gera pixel+endpoint), criar usuário (auth admin), add/remove membros — owner/admin gated no backend.
+- [x] **V3-8 endurecimento:** advisor sem erro crítico (14/14 `tenant_read`; `project_credentials`/`meta_sync_state` negados; 3 WARN intencionais dos helpers SECURITY DEFINER; pg_net/senha-vazada pré-existentes). Projeto sintético removido; dado real intacto (702 / R$ 41.873,74).
+- **Limitação documentada:** o editor de Produtos/Tag/Retenção (v2) na tela Configurar segue escopado ao Projeto Padrão; a config v3 por funil (`source_filters`) é o caminho à frente (ADR-v3-10). Os **dashboards** já são por projeto.
+- **Último passo:** **deploy de produção** (merge na `main`) — só com OK do dono.
 
 ---
 
