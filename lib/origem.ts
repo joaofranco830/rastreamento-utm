@@ -1,7 +1,7 @@
 import "server-only";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
-/** Leitura da Tela Origem (server-only) via service_role; página protegida por login. */
+/** Leitura da Tela Origem (server-only) POR PROJETO, via sessão do usuário (RLS). */
 
 export interface OrigemBucket {
   sales: number;
@@ -25,13 +25,14 @@ export interface CustomerRow {
 }
 
 export async function getOrigem(
+  projectId: number,
   from: string,
   to: string,
 ): Promise<{ overview: OrigemOverview; customers: CustomerRow[] }> {
-  const admin = getSupabaseAdmin();
+  const supabase = await createClient();
   const [ov, cust] = await Promise.all([
-    admin.rpc("origem_overview", { p_from: from, p_to: to }),
-    admin.rpc("customers_list", { p_from: from, p_to: to }),
+    supabase.rpc("origem_overview", { p_project_id: projectId, p_from: from, p_to: to }),
+    supabase.rpc("customers_list", { p_project_id: projectId, p_from: from, p_to: to }),
   ]);
   if (ov.error) throw new Error(`origem_overview: ${ov.error.message}`);
   if (cust.error) throw new Error(`customers_list: ${cust.error.message}`);

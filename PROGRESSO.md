@@ -393,7 +393,54 @@ Todas as fases concluídas e **no ar** (rastreamento-utm.vercel.app, região Sã
 
 ---
 
+## 🚧 V3 EM EXECUÇÃO (fundação multi-tenant)
+
+> Fonte de verdade: `arquitetura-rastreamento-utm-v3.md`. Recorte travado: fundação multi-cliente + re-acomodar o dado atual como **Projeto Padrão "Geografia da Voz"** + só Perpétuo + CSV + Construtor de UTMs. Só Hotmart. Cofre AES-GCM com chave fora do banco. Isolamento em defesa em profundidade (RLS por filiação na leitura; service_role na ingestão).
+> **Política de OK (definida pelo dono):** piloto automático com checkpoint só nos 2 momentos de risco — **backfill do dado real (V3-1)** e **flip da RLS + deploy (V3-3)**.
+> **Deploy:** automático no merge da `main` (sem token Vercel). Segredo novo: `CREDENTIALS_MASTER_KEY` (env Vercel, usado na V3-2).
+
+### V3-0 — Esqueleto de tenancy ✅ (aplicado em produção)
+- [x] **Migration `0022`** (aditiva): cria as 8 tabelas da fundação — `projects`, `app_users`, `project_members`, `project_credentials`, `project_endpoints`, `project_pixels`, `utm_link_sets`, `import_batches`. RLS ligado **sem política** (padrão v1/v2). **Nenhuma** tabela de dados tocada.
+- [x] **Seeds:** Projeto Padrão "Geografia da Voz" (id capturado dinamicamente), perfil **owner** (`j.guilherme830@icloud.com` → `3661d235-…`, `is_owner=true`) e filiação owner→Padrão (`admin`). Idempotentes.
+- [x] **DoD validado:** seeds criados (1 projeto / 1 owner / 1 membership); dados reais **idênticos** ao baseline (orders 702, tracking_events 476, touchpoints 357, visitors 360, order_events 1044, meta_insights_daily 1073, attributions 18); advisor sem **erro novo** (só INFO "RLS sem política" intencional nas tabelas novas + 2 WARN pré-existentes pg_net/leaked-password).
+### V3-1 — `project_id` em todas as tabelas + backfill ✅ (aplicado em produção — CHECKPOINT 1 aprovado)
+- [x] **Migration `0023`** (aditiva): `project_id` (nullable) + índice nas 14 tabelas de dados; `funnels` ganha `type` + `source_filters`.
+- [x] **Migration `0024`** (backfill): carimba todo o dado atual como Projeto Padrão (id=1) — escreve **só** `project_id`, nenhum valor real tocado. Cria funil **"Perpétuo — Geografia da Voz"** (`type='perpetuo'`) migrando a lente atual para `source_filters`: produtos `[7716106, 7715052]`, tag `[GEO-VOZ-02]`, recorrência `all`.
+- [x] **Migration `0024b`** (trava): `DEFAULT 1` + `NOT NULL` nas 14 colunas. Default mantém o app pré-V3-2 gravando no Padrão; NOT NULL impede linha sem tenant. Falha-segura (reverte se restar NULL).
+- [x] **Gate aprovado byte-a-byte:** `project_id IS NULL = 0` em todas; 702 pedidos / líquido R$ 41.873,74 / bruto 65.683,89 / estornado 23.810,15 / 576 e-mails únicos / 17 rastreadas + 685 não / 18 atribuições / investido R$ 14.950,87 — **idênticos** ao pré-backfill. 14/14 colunas NOT NULL confirmadas.
+### V3-2 — Cofre + roteamento de webhook/pixel por projeto ✅ (banco aplicado; app no preview)
+- [x] **Chave-mestra no Supabase Vault** (`credentials_master_key`) — ADR-v3-7a (não foi pro env da Vercel por bloqueio de rede do ambiente; Vault mantém a chave-raiz fora das tabelas SQL). Leitura validada.
+- [x] **Migration `0025`** (aditiva): `app_get_master_key()` (service_role only); `apply_hotmart_event(...,p_project_id default 1)` (webhook atual segue funcionando); `attribute_order` filtra/carimba por `project_id`; `prune_raw_events` por projeto; `meta_sync_state.project_id`; `endpoint_key`/`pixel_key` do Padrão gerados.
+- [x] **Migration `0025b`**: `set_project_credential`/`get_project_credential` (base64↔bytea, service_role only).
+- [x] **`lib/crypto`** (AES-256-GCM, chave do Vault c/ fallback env) + **`lib/credentials`** (cofre por projeto).
+- [x] **App:** `lib/sales/webhook` (handler compartilhado); `/api/webhook/hotmart` legada → Padrão (Hottok do cofre + auto-popula na 1ª chamada); `/api/webhook/hotmart/[endpoint_key]` por projeto; `/p/[pixel_key]/t.js` (pixel por projeto); `/api/collect` resolve `project_id` pela `pixel_key`; `t.js` envia `pixel_key`. **Backward-compat:** `t.js` pelado + webhook legado seguem no Padrão.
+- [x] **Validação local:** `tsc --noEmit` 0 erros + `next build` OK (3 rotas novas registradas).
+- **Adiado (V4):** sync do Meta por-projeto lendo o cofre (hoje usa env + `DEFAULT project_id=1`, correto p/ 1 projeto). Move do token Meta p/ o cofre vem junto.
+- **Estratégia de deploy:** acumular V3-x nesta branch/PR; **1 único deploy de produção no fim (merge na `main`)**, junto do flip da RLS (checkpoint #2). Migrations aditivas já no banco; produção atual intacta (lê via service_role).
+### V3-3 — Leitura por projeto + FLIP da RLS ✅ (banco aplicado + isolamento provado — checkpoint #2 aprovado)
+- [x] **Migration `0026`**: 7 funções de dashboard SOBRECARREGADAS com `p_project_id` (1º arg), escopando toda tabela por projeto; `SECURITY INVOKER` + grant a `authenticated`. Versões antigas (2 args) mantidas (produção via service_role intacta até o deploy final). **Gate de regressão:** nova `(1,…)` vs antiga = **idêntica** nas 6 testadas (central_summary/timeseries, origem, customers, creatives, campaigns).
+- [x] **Migration `0027` (o flip)**: helpers `app_is_owner()`/`app_can_access()`/`app_role_in()` (STABLE SECURITY DEFINER, search_path fixo); política `tenant_read` (SELECT por `app_can_access(project_id)`) nas 14 tabelas de dados; leitura por membros nas tabelas de config; **`project_credentials` sem política → negado** ao browser. `service_role` bypassa (ingestão/produção intactas); `anon` negado.
+- [x] **Teste de isolamento (2º projeto sintético, dados `TESTE-*` em 2099, sem tocar produção):** owner vê os 2 (703); não-membro vê **0** em tudo (incl. cofre); membro só-do-Teste vê **só o Teste, 0 reais**; **`project_id` forjado → 0** (RLS bloqueia). Sintético **removido** após o teste.
+- [x] **Regressão:** pós-flip, dado real idêntico (702 orders / 360 visitors / R$ 41.873,74). Funções novas OK.
+### V3-3 (resto) + V3-4 + V3-5 + V3-6 (parte) ✅ (app no preview; build+typecheck OK)
+- [x] **Leitura por sessão+RLS:** `lib/auth` (requireUser/isOwner/roleInProject/requireRole) + `lib/tenant` (projeto ativo via cookie, validado contra filiação). Dashboards (central/origem/campanhas) leem via sessão do usuário chamando as funções com `p_project_id` (isolamento pela RLS). `loadChildren` resolve o projeto no servidor.
+- [x] **Seletor de projeto global** (USR-05) no topo (`ProjectSwitcher` + `setActiveProjectAction`, valida filiação).
+- [x] **Shell final (V3-5):** abas laterais com TODA a navegação do mapa (§11); gate **"Em produção"** (🚧) nos itens não construídos; Perpétuo marcado "não 100%". 3 telas migradas pro Shell.
+- [x] **Admin global (V3-4, parte):** `/admin` (owner) — visão de todos os projetos + membros.
+- [x] **Hub Configurar (V3-6, parte):** Pixel do projeto (snippet `/p/{key}/t.js` + status recebendo/sem sinal) e Integração Hotmart (URL única `/api/webhook/hotmart/{key}` + passo a passo). `CopyField` p/ copiar.
+- **Pendente (marcado 🚧 "Em produção", próximas levas):** CRUD de projeto/usuário + gestão de membros (writes); salvar Hottok/token Meta no cofre (forms); **Importar CSV** (INT-07); **Construtor de UTMs + verificador** (com guarda anti-SSRF). Tudo com placeholder no lugar — nav completa, nada quebrado.
+### V3-7 + V3-6 (resto) + V3-4 (resto) + V3-8 ✅ (app no preview; banco endurecido)
+- [x] **V3-7 Construtor de UTMs + verificador** (`/configuracoes/utm`): gera pago/orgânico, edita, salva tabelas reabríveis (`utm_link_sets`); verificador com guarda anti-SSRF.
+- [x] **V3-6 Importar CSV** (`/configuracoes/importar`): mapeamento de colunas + dedup por `transaction` + histórico. **Forms de credencial** (Hottok + token Meta) cifrando no cofre.
+- [x] **V3-4 CRUD de Admin** (`/admin`): criar projeto (gera pixel+endpoint), criar usuário (auth admin), add/remove membros — owner/admin gated no backend.
+- [x] **V3-8 endurecimento:** advisor sem erro crítico (14/14 `tenant_read`; `project_credentials`/`meta_sync_state` negados; 3 WARN intencionais dos helpers SECURITY DEFINER; pg_net/senha-vazada pré-existentes). Projeto sintético removido; dado real intacto (702 / R$ 41.873,74).
+- **Limitação documentada:** o editor de Produtos/Tag/Retenção (v2) na tela Configurar segue escopado ao Projeto Padrão; a config v3 por funil (`source_filters`) é o caminho à frente (ADR-v3-10). Os **dashboards** já são por projeto.
+- **Último passo:** **deploy de produção** (merge na `main`) — só com OK do dono.
+
+---
+
 ## Descobertas / a validar (carregado da arquitetura)
+- **Inventário real no início da V3 (jun/2026):** orders 702, order_events 1044, tracking_events 476, touchpoints 357, visitors 360, meta_insights_daily 1073, attributions 18, campaigns 26, adsets 41, ads 131, products 15, ad_accounts 1, funnels 0, tracking_config 1. **+ tabela `meta_sync_state`** (trava do sync, não listada nas 14 do doc → entra no escopo por projeto na V3-2).
 - **Sandbox Hotmart** (antes da Fase 3): confirmar comprimento e caixa de `src`/`sck` e a forma exata do objeto `origin`.
 - **Reembolso parcial**: reduz faturamento, mantém conversão (padrão adotado).
 - **Restatement por coorte**: estorno deduz da data/origem da venda original (padrão adotado).

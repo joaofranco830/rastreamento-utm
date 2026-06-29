@@ -4,7 +4,7 @@
 > **Fonte de verdade do desenho:**
 > - **v1 (base, concluída e no ar):** `arquitetura-rastreamento-utm-v1.md` (versão 1.1).
 > - **v2 (concluída e no ar):** `arquitetura-rastreamento-utm-v2.md` — estendeu a v1 (migrations aditivas 0015→0021, mesma stack). Fases V2-0→V2-7 concluídas.
-> - **v3 (em planejamento):** primeira leva rumo à visão de estado-final; a arquitetura será criada por IA de planejamento (ainda não existe doc).
+> - **v3 (em execução — FUNDAÇÃO multi-tenant):** `arquitetura-rastreamento-utm-v3.md`. Primeira leva da visão de estado-final: esqueleto multi-cliente (Usuário→Projetos→Funis, RBAC Admin/Funcionário/Cliente, **RLS por filiação**, cofre de credenciais no **Supabase Vault** — ADR-v3-7a) + dashboards por projeto + seletor + shell final + Construtor de UTMs + Importar CSV + Admin. **Banco aplicado em produção** (migrations aditivas 0022→0027, dado real **intacto**); **app validado no preview**, aguardando o **deploy final** (merge na `main`).
 > - **Visão de estado-final (NORTE):** `mapa-funcional-rastreamento-utm.md` — o destino completo: **ferramenta multi-cliente INTERNA** (hierarquia Usuário→Projetos→Funis, RBAC Admin/Funcionário/Cliente, engines transversais, 6 tipos de funil). Construída em levas (v3, v4, …), uma função por leva. **NÃO é a arquitetura** — é o destino que orienta cada leva. (Venda externa/SaaS comercial segue fora de escopo; "cliente/projeto" é só unidade de isolamento interno.)
 > Em qualquer conflito entre este briefing e a arquitetura vigente, **a arquitetura prevalece** — e me avise da divergência.
 
@@ -14,7 +14,7 @@
 
 Uma ferramenta própria de rastreamento por UTM para funis de tráfego direto de infoprodutos. Ela liga o **clique no anúncio (UTM) → page view → checkout → compra** usando um script de rastreio próprio, integra com o **Meta Ads** (métricas de anúncio) e com a **Hotmart via Webhook 2.0** (vendas/reembolsos como fonte de verdade do faturamento), e apresenta tudo num **dashboard** com métricas centrais (investido, vendas líquidas, faturamento líquido, ROAS), métricas de funil e reconciliação "nosso rastreio × Meta". Detalhe completo na arquitetura.
 
-Uso: apenas eu (single-user). **Multi-usuário/SaaS é v3–v5 (fora de escopo agora).**
+Uso hoje: apenas eu (1 usuário × 1 projeto). A **v3 entregou a fundação multi-cliente INTERNA** (multi-projeto/RBAC/RLS); **SaaS comercial** segue fora de escopo. "cliente/projeto" é só unidade de isolamento interno.
 
 > **Status atual:** **v1 e v2 concluídas e em produção** (Vercel região São Paulo + Supabase + webhook Hotmart + sync Meta com vídeo/status + 3 telas novas — Central/Origem/Campanhas — + config + poda automática, **com vendas reais entrando**). Código no **GitHub (público):** https://github.com/joaofranco830/rastreamento-utm. **Próximo: planejar a v3** (ver `PROGRESSO.md` para o estado detalhado e §8 para o escopo candidato a v3+).
 
