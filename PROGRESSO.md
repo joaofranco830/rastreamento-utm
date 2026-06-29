@@ -417,7 +417,12 @@ Todas as fases concluídas e **no ar** (rastreamento-utm.vercel.app, região Sã
 - [x] **Validação local:** `tsc --noEmit` 0 erros + `next build` OK (3 rotas novas registradas).
 - **Adiado (V4):** sync do Meta por-projeto lendo o cofre (hoje usa env + `DEFAULT project_id=1`, correto p/ 1 projeto). Move do token Meta p/ o cofre vem junto.
 - **Estratégia de deploy:** acumular V3-x nesta branch/PR; **1 único deploy de produção no fim (merge na `main`)**, junto do flip da RLS (checkpoint #2). Migrations aditivas já no banco; produção atual intacta (lê via service_role).
-- **Próximo (V3-3 — checkpoint #2):** funções de dashboard com `p_project_id` + `SECURITY INVOKER`; app lê via sessão do usuário; **flip da RLS** (políticas por filiação) + teste de isolamento com 2º projeto sintético.
+### V3-3 — Leitura por projeto + FLIP da RLS ✅ (banco aplicado + isolamento provado — checkpoint #2 aprovado)
+- [x] **Migration `0026`**: 7 funções de dashboard SOBRECARREGADAS com `p_project_id` (1º arg), escopando toda tabela por projeto; `SECURITY INVOKER` + grant a `authenticated`. Versões antigas (2 args) mantidas (produção via service_role intacta até o deploy final). **Gate de regressão:** nova `(1,…)` vs antiga = **idêntica** nas 6 testadas (central_summary/timeseries, origem, customers, creatives, campaigns).
+- [x] **Migration `0027` (o flip)**: helpers `app_is_owner()`/`app_can_access()`/`app_role_in()` (STABLE SECURITY DEFINER, search_path fixo); política `tenant_read` (SELECT por `app_can_access(project_id)`) nas 14 tabelas de dados; leitura por membros nas tabelas de config; **`project_credentials` sem política → negado** ao browser. `service_role` bypassa (ingestão/produção intactas); `anon` negado.
+- [x] **Teste de isolamento (2º projeto sintético, dados `TESTE-*` em 2099, sem tocar produção):** owner vê os 2 (703); não-membro vê **0** em tudo (incl. cofre); membro só-do-Teste vê **só o Teste, 0 reais**; **`project_id` forjado → 0** (RLS bloqueia). Sintético **removido** após o teste.
+- [x] **Regressão:** pós-flip, dado real idêntico (702 orders / 360 visitors / R$ 41.873,74). Funções novas OK.
+- **Próximo (V3-3 resto + deploy):** refatorar a leitura do app (`lib/tenant` + dashboards via sessão do usuário passando o projeto ativo) — vai ao ar no **deploy final** (merge na `main`), o último passo do checkpoint #2.
 
 ---
 
