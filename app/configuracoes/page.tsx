@@ -5,11 +5,13 @@ import { requireUser } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { getProducts, getTrackingConfig } from "@/lib/config-store";
+import { hasCredential } from "@/lib/credentials";
 import Shell from "../shell";
 import ProductsManager from "./products-manager";
 import CampaignTagsForm from "./campaign-tags-form";
 import RetentionForm from "./retention-form";
 import CopyField from "./copy-field";
+import { HottokForm, MetaForm } from "./credential-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +53,12 @@ export default async function ConfiguracoesPage() {
       .gte("ts", since),
     getProducts(),
     getTrackingConfig(),
+  ]);
+
+  const [hottokSet, metaTokenSet, metaAccountSet] = await Promise.all([
+    hasCredential(projectId, "hotmart", "hottok"),
+    hasCredential(projectId, "meta", "token"),
+    hasCredential(projectId, "meta", "account_id"),
   ]);
 
   const h = await headers();
@@ -106,6 +114,19 @@ export default async function ConfiguracoesPage() {
           <p className="mt-3 text-xs text-zinc-400">
             O Projeto Padrão já opera com a integração existente; reapontar para esta URL é opcional.
           </p>
+          <HottokForm configured={hottokSet} />
+        </section>
+
+        {/* Integração Meta (token manual por projeto) */}
+        <section className="mb-10">
+          <h2 className="mb-2 text-lg font-medium">Integração Meta (token por projeto)</h2>
+          <p className="mb-1 text-sm text-zinc-500">
+            Token do System User + ID da conta de anúncio. Guardados <strong>cifrados</strong> no cofre do projeto.
+          </p>
+          <MetaForm tokenSet={metaTokenSet} accountSet={metaAccountSet} />
+          <p className="mt-3 text-xs text-zinc-400">
+            🚧 &quot;Conectar com 1 clique (OAuth)&quot; entra numa leva própria (depende de app review).
+          </p>
         </section>
 
         {/* Em produção: itens do hub ainda não construídos */}
@@ -116,11 +137,8 @@ export default async function ConfiguracoesPage() {
           <Link href="/configuracoes/utm" className="rounded-xl border border-black/[.1] p-3 text-sm font-medium transition-colors hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.04]">
             🔗 Construtor de UTMs + verificador
           </Link>
-          <Link href="/em-producao?t=Integração+Meta+(token)" className="rounded-xl border border-dashed border-black/[.12] p-3 text-sm text-zinc-500 transition-colors hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.04]">
-            🚧 Integração Meta (token por projeto)
-          </Link>
-          <Link href="/em-producao?t=Membros+do+projeto" className="rounded-xl border border-dashed border-black/[.12] p-3 text-sm text-zinc-500 transition-colors hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.04]">
-            🚧 Membros do projeto
+          <Link href="/admin" className="rounded-xl border border-black/[.1] p-3 text-sm font-medium transition-colors hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.04]">
+            👥 Projetos &amp; membros (Admin)
           </Link>
         </section>
 

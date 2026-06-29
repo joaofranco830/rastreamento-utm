@@ -31,6 +31,19 @@ export async function setProjectCredential(
   if (error) throw error;
 }
 
+/** Existência de uma credencial (boolean), sem expor o valor. Usa service_role. */
+export async function hasCredential(projectId: number, provider: Provider, kind: Kind): Promise<boolean> {
+  const supa = getSupabaseAdmin();
+  const { data } = await supa
+    .from("project_credentials")
+    .select("id")
+    .eq("project_id", projectId)
+    .eq("provider", provider)
+    .eq("kind", kind)
+    .maybeSingle();
+  return !!data;
+}
+
 export async function getProjectCredential(
   projectId: number,
   provider: Provider,
