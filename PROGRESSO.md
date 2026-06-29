@@ -422,7 +422,14 @@ Todas as fases concluídas e **no ar** (rastreamento-utm.vercel.app, região Sã
 - [x] **Migration `0027` (o flip)**: helpers `app_is_owner()`/`app_can_access()`/`app_role_in()` (STABLE SECURITY DEFINER, search_path fixo); política `tenant_read` (SELECT por `app_can_access(project_id)`) nas 14 tabelas de dados; leitura por membros nas tabelas de config; **`project_credentials` sem política → negado** ao browser. `service_role` bypassa (ingestão/produção intactas); `anon` negado.
 - [x] **Teste de isolamento (2º projeto sintético, dados `TESTE-*` em 2099, sem tocar produção):** owner vê os 2 (703); não-membro vê **0** em tudo (incl. cofre); membro só-do-Teste vê **só o Teste, 0 reais**; **`project_id` forjado → 0** (RLS bloqueia). Sintético **removido** após o teste.
 - [x] **Regressão:** pós-flip, dado real idêntico (702 orders / 360 visitors / R$ 41.873,74). Funções novas OK.
-- **Próximo (V3-3 resto + deploy):** refatorar a leitura do app (`lib/tenant` + dashboards via sessão do usuário passando o projeto ativo) — vai ao ar no **deploy final** (merge na `main`), o último passo do checkpoint #2.
+### V3-3 (resto) + V3-4 + V3-5 + V3-6 (parte) ✅ (app no preview; build+typecheck OK)
+- [x] **Leitura por sessão+RLS:** `lib/auth` (requireUser/isOwner/roleInProject/requireRole) + `lib/tenant` (projeto ativo via cookie, validado contra filiação). Dashboards (central/origem/campanhas) leem via sessão do usuário chamando as funções com `p_project_id` (isolamento pela RLS). `loadChildren` resolve o projeto no servidor.
+- [x] **Seletor de projeto global** (USR-05) no topo (`ProjectSwitcher` + `setActiveProjectAction`, valida filiação).
+- [x] **Shell final (V3-5):** abas laterais com TODA a navegação do mapa (§11); gate **"Em produção"** (🚧) nos itens não construídos; Perpétuo marcado "não 100%". 3 telas migradas pro Shell.
+- [x] **Admin global (V3-4, parte):** `/admin` (owner) — visão de todos os projetos + membros.
+- [x] **Hub Configurar (V3-6, parte):** Pixel do projeto (snippet `/p/{key}/t.js` + status recebendo/sem sinal) e Integração Hotmart (URL única `/api/webhook/hotmart/{key}` + passo a passo). `CopyField` p/ copiar.
+- **Pendente (marcado 🚧 "Em produção", próximas levas):** CRUD de projeto/usuário + gestão de membros (writes); salvar Hottok/token Meta no cofre (forms); **Importar CSV** (INT-07); **Construtor de UTMs + verificador** (com guarda anti-SSRF). Tudo com placeholder no lugar — nav completa, nada quebrado.
+- **Falta p/ fechar a V3:** V3-8 endurecimento (advisors, índices, re-teste de isolamento) + **deploy de produção único** (merge na `main`) — o último checkpoint, **só com OK do dono**.
 
 ---
 
