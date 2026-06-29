@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth";
+import { getActiveProjectId } from "@/lib/tenant";
 import { getCentral, resolveRange } from "@/lib/central";
 import { brl, inteiro, pct, mult } from "@/lib/format";
 import Nav from "../nav";
@@ -42,15 +43,13 @@ export default async function CentralPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string; dias?: string }>;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser();
+  const projectId = await getActiveProjectId();
+  if (!projectId) redirect("/configuracoes");
 
   const sp = await searchParams;
   const { from, to, dias } = resolveRange(sp);
-  const d = await getCentral(from, to);
+  const d = await getCentral(projectId, from, to);
   const s = d.summary;
   const roleTotal = ROLE_ORDER.reduce((acc, r) => acc + (s.revenue_by_role[r] ?? 0), 0);
 

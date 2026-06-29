@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth";
+import { getActiveProjectId } from "@/lib/tenant";
 import { getOrigem } from "@/lib/origem";
 import { resolveRange } from "@/lib/central";
 import { brl, inteiro, pct } from "@/lib/format";
@@ -15,15 +16,13 @@ export default async function OrigemPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string; dias?: string }>;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser();
+  const projectId = await getActiveProjectId();
+  if (!projectId) redirect("/configuracoes");
 
   const sp = await searchParams;
   const { from, to, dias } = resolveRange(sp);
-  const { overview: ov, customers } = await getOrigem(from, to);
+  const { overview: ov, customers } = await getOrigem(projectId, from, to);
   const total = ov.total.sales || 0;
   const shareOf = (n: number) => (total > 0 ? n / total : 0);
   const qs = `?from=${from}&to=${to}`;

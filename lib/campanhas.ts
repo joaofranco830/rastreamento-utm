@@ -1,7 +1,7 @@
 import "server-only";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
-/** Leitura da Tela Campanhas (server-only) via service_role. */
+/** Leitura da Tela Campanhas (server-only) POR PROJETO, via sessão do usuário (RLS). */
 
 export type Level = "campaign" | "adset" | "creative";
 
@@ -42,13 +42,15 @@ export interface CreativeRow {
 }
 
 export async function getCampaignsTable(
+  projectId: number,
   level: Level,
   parentId: string | null,
   from: string,
   to: string,
 ): Promise<CampaignRow[]> {
-  const admin = getSupabaseAdmin();
-  const { data, error } = await admin.rpc("campaigns_table", {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("campaigns_table", {
+    p_project_id: projectId,
     p_level: level,
     p_parent_id: parentId,
     p_from: from,
@@ -58,9 +60,17 @@ export async function getCampaignsTable(
   return (data ?? []) as CampaignRow[];
 }
 
-export async function getCreativesConsolidated(from: string, to: string): Promise<CreativeRow[]> {
-  const admin = getSupabaseAdmin();
-  const { data, error } = await admin.rpc("creatives_consolidated", { p_from: from, p_to: to });
+export async function getCreativesConsolidated(
+  projectId: number,
+  from: string,
+  to: string,
+): Promise<CreativeRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("creatives_consolidated", {
+    p_project_id: projectId,
+    p_from: from,
+    p_to: to,
+  });
   if (error) throw new Error(`creatives_consolidated: ${error.message}`);
   return (data ?? []) as CreativeRow[];
 }

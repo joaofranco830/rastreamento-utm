@@ -1,10 +1,13 @@
 import Link from "next/link";
 import RefreshButton from "./refresh-button";
 import LogoutButton from "./logout-button";
+import ProjectSwitcher from "./project-switcher";
+import { getVisibleProjects, getActiveProjectId } from "@/lib/tenant";
 
 /**
  * Barra de navegação da V2 (compartilhada entre as telas). V2 é o padrão;
- * o dashboard antigo (v1) fica escondido em Configurações.
+ * o dashboard antigo (v1) fica escondido em Configurações. Agora com o
+ * seletor de projeto global (USR-05).
  */
 const TABS: { href: string; label: string }[] = [
   { href: "/central", label: "Central" },
@@ -12,13 +15,17 @@ const TABS: { href: string; label: string }[] = [
   { href: "/campanhas", label: "Campanhas" },
 ];
 
-export default function Nav({
+export default async function Nav({
   active,
   qs = "",
 }: {
   active: "/central" | "/origem" | "/campanhas";
   qs?: string;
 }) {
+  const [projects, activeProject] = await Promise.all([
+    getVisibleProjects(),
+    getActiveProjectId(),
+  ]);
   return (
     <header className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-black/[.07] pb-4 dark:border-white/[.08]">
       <div className="flex items-center gap-1">
@@ -38,6 +45,7 @@ export default function Nav({
         ))}
       </div>
       <div className="flex items-center gap-2">
+        <ProjectSwitcher projects={projects} active={activeProject} />
         <RefreshButton />
         <Link
           href="/configuracoes"

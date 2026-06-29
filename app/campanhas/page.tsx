@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth";
+import { getActiveProjectId } from "@/lib/tenant";
 import { resolveRange } from "@/lib/central";
 import { getCampaignsTable, getCreativesConsolidated } from "@/lib/campanhas";
 import Nav from "../nav";
@@ -14,19 +15,17 @@ export default async function CampanhasPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string; dias?: string }>;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  await requireUser();
+  const projectId = await getActiveProjectId();
+  if (!projectId) redirect("/configuracoes");
 
   const sp = await searchParams;
   const { from, to, dias } = resolveRange(sp);
   const qs = `?from=${from}&to=${to}`;
 
   const [campaigns, creatives] = await Promise.all([
-    getCampaignsTable("campaign", null, from, to),
-    getCreativesConsolidated(from, to),
+    getCampaignsTable(projectId, "campaign", null, from, to),
+    getCreativesConsolidated(projectId, from, to),
   ]);
 
   return (

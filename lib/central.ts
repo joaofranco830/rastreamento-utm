@@ -1,10 +1,10 @@
 import "server-only";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 /**
- * Leitura da Tela Central (server-only). Chama as funções central_summary +
- * central_timeseries (revogadas de anon/authenticated) via service_role; a
- * página já é protegida por login.
+ * Leitura da Tela Central (server-only) POR PROJETO. Chama central_summary +
+ * central_timeseries via SESSÃO do usuário (RLS por filiação garante que só
+ * retorna dados de projeto autorizado — ADR-v3-4/11).
  */
 
 export interface CentralSummary {
@@ -80,13 +80,13 @@ export function resolveRange(params: { from?: string; to?: string; dias?: string
   return { from: spDate(dias - 1), to: spDate(0), dias };
 }
 
-export async function getCentral(from: string, to: string): Promise<CentralData> {
-  const admin = getSupabaseAdmin();
+export async function getCentral(projectId: number, from: string, to: string): Promise<CentralData> {
+  const supabase = await createClient();
   const [s, t, prods, cfg] = await Promise.all([
-    admin.rpc("central_summary", { p_from: from, p_to: to }),
-    admin.rpc("central_timeseries", { p_from: from, p_to: to }),
-    admin.from("products").select("included"),
-    admin.from("tracking_config").select("campaign_name_tags").eq("id", 1).single(),
+    supabase.rpc("central_summary", { p_project_id: projectId, p_from: from, p_to: to }),
+    supabase.rpc("central_timeseries", { p_project_id: projectId, p_from: from, p_to: to }),
+    supabase.from("products").select("included").eq("project_id", projectId),
+    supabase.from("tracking_config").select("campaign_name_tags").eq("project_id", projectId).maybeSingle(),
   ]);
   if (s.error) throw new Error(`central_summary: ${s.error.message}`);
   if (t.error) throw new Error(`central_timeseries: ${t.error.message}`);
