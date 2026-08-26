@@ -103,6 +103,7 @@ arquitetura-rastreamento-utm-v2.md  # desenho v2 (em execução — fonte de ver
 - Migrations: arquivos em `supabase/migrations/`. Banco na nuvem (projeto `rastreamento-utm`, org FRANCO ADVERTISING, região sa-east-1). Aplicar via painel Supabase ou `npx supabase db push` quando o projeto estiver linkado.
 - Deploy: **NO AR na Vercel** → https://rastreamento-utm.vercel.app (projeto `rastreamento-utm`). Webhook Hotmart + `/api/collect` em produção. Redeploy via Vercel CLI (exige token da Vercel na hora de publicar).
 - GitHub: **repo público** https://github.com/joaofranco830/rastreamento-utm (remote `origin`, branch `main`). Push exige um token (PAT) gerado na hora — **não** fica salvo no `.git/config`.
+- MCP Google Ads (ferramenta de dev, **fora** do app): configurado em `.mcp.json` (roda via `uvx`, lê credenciais do shell — nenhum segredo versionado). Setup passo a passo em `docs/google-ads-mcp.md`. Ver conexão com `/mcp`.
 
 ---
 
