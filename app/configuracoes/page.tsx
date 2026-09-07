@@ -117,16 +117,31 @@ export default async function ConfiguracoesPage() {
           <HottokForm configured={hottokSet} />
         </section>
 
-        {/* Integração Meta (token manual por projeto) */}
+        {/* Integração Meta (wizard passo a passo por projeto) */}
         <section className="mb-10">
-          <h2 className="mb-2 text-lg font-medium">Integração Meta (token por projeto)</h2>
-          <p className="mb-1 text-sm text-zinc-500">
-            Token do System User + ID da conta de anúncio. Guardados <strong>cifrados</strong> no cofre do projeto.
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-medium">Integração Meta (Business Manager)</h2>
+            <StatusBadge on={metaTokenSet && metaAccountSet} labelOn="BM conectada" labelOff="Não conectada" />
+          </div>
+          <p className="mb-3 text-sm text-zinc-500">
+            Conecte a BM que anuncia os produtos deste projeto. O passo a passo guia a criação do token e a escolha da conta
+            de anúncio — vale para qualquer BM nova depois.
           </p>
-          <MetaForm tokenSet={metaTokenSet} accountSet={metaAccountSet} />
-          <p className="mt-3 text-xs text-zinc-400">
-            🚧 &quot;Conectar com 1 clique (OAuth)&quot; entra numa leva própria (depende de app review).
-          </p>
+          <Link
+            href="/configuracoes/meta"
+            className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background"
+          >
+            {metaTokenSet && metaAccountSet ? "Gerenciar conexão do Meta" : "Conectar Business Manager →"}
+          </Link>
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+              Avançado: colar token e conta manualmente
+            </summary>
+            <div className="mt-2">
+              <MetaForm tokenSet={metaTokenSet} accountSet={metaAccountSet} />
+            </div>
+          </details>
         </section>
 
         {/* Em produção: itens do hub ainda não construídos */}

@@ -11,16 +11,30 @@ const BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
 // Janela de atribuição lida do Meta: alinha com nosso last-click 7d.
 export const META_ATTR_WINDOW = "7d_click";
 
-function token(): string {
-  const t = process.env.META_ACCESS_TOKEN;
-  if (!t) throw new Error("META_ACCESS_TOKEN ausente");
-  return t;
+export interface MetaCreds {
+  token: string;
+  account: string;
 }
-function account(): string {
-  let a = process.env.META_AD_ACCOUNT_ID;
-  if (!a) throw new Error("META_AD_ACCOUNT_ID ausente");
-  a = a.trim();
-  return a.startsWith("act_") ? a : `act_${a}`;
+
+export function normAccount(a: string): string {
+  const t = (a ?? "").trim();
+  return t.startsWith("act_") ? t : `act_${t}`;
+}
+
+/** Credenciais do Meta do `.env` (usadas pelo Projeto Padrão/cliente enquanto não migram pro cofre). */
+export function envMetaCreds(): MetaCreds | null {
+  const t = process.env.META_ACCESS_TOKEN;
+  const a = process.env.META_AD_ACCOUNT_ID;
+  return t && a ? { token: t, account: normAccount(a) } : null;
+}
+
+/** Lista as contas de anúncio que o token enxerga (passo "testar conexão" do wizard). */
+export async function listAdAccounts(tok: string): Promise<{ id: string; name: string }[]> {
+  const params = new URLSearchParams({ fields: "account_id,name", limit: "200", access_token: tok });
+  const data = await getAllPages(`${BASE}/me/adaccounts?${params.toString()}`);
+  return data
+    .map((r) => ({ id: (r.account_id as string) ?? "", name: (r.name as string) ?? "" }))
+    .filter((x) => x.id);
 }
 
 export interface MetaError extends Error {
@@ -117,7 +131,7 @@ export interface MetaInsightRow {
 }
 
 /** Insights por anúncio, 1 linha por (anúncio, dia), na janela recente. */
-export async function fetchInsights(sinceDays = 14): Promise<MetaInsightRow[]> {
+export async function fetchInsights(creds: MetaCreds, sinceDays = 14): Promise<MetaInsightRow[]> {
   const until = new Date();
   const since = new Date(until.getTime() - sinceDays * 86400000);
   const params = new URLSearchParams({
@@ -129,9 +143,9 @@ export async function fetchInsights(sinceDays = 14): Promise<MetaInsightRow[]> {
     time_increment: "1",
     time_range: JSON.stringify({ since: ymd(since), until: ymd(until) }),
     limit: "500",
-    access_token: token(),
+    access_token: creds.token,
   });
-  const data = await getAllPages(`${BASE}/${account()}/insights?${params.toString()}`);
+  const data = await getAllPages(`${BASE}/${normAccount(creds.account)}/insights?${params.toString()}`);
   return data as unknown as MetaInsightRow[];
 }
 
@@ -140,14 +154,15 @@ export async function fetchInsights(sinceDays = 14): Promise<MetaInsightRow[]> {
  * Endpoint separado: o status NÃO vem nos insights. Retorna Map<meta_id, status>.
  */
 export async function fetchEntityStatuses(
+  creds: MetaCreds,
   level: "campaigns" | "adsets" | "ads",
 ): Promise<Map<string, string>> {
   const params = new URLSearchParams({
     fields: "id,effective_status",
     limit: "500",
-    access_token: token(),
+    access_token: creds.token,
   });
-  const data = await getAllPages(`${BASE}/${account()}/${level}?${params.toString()}`);
+  const data = await getAllPages(`${BASE}/${normAccount(creds.account)}/${level}?${params.toString()}`);
   const m = new Map<string, string>();
   for (const r of data) {
     const id = r.id as string | undefined;
