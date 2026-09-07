@@ -49,80 +49,93 @@ async function syncProjectMeta(
   creds: MetaCreds,
   sinceDays: number,
 ): Promise<SyncResult> {
-  const rows = await fetchInsights(creds, sinceDays);
+  let campaigns = 0;
+  let adsets = 0;
+  let ads = 0;
+  let insights = 0;
 
-  // status de veiculação por nível (endpoint separado dos insights)
-  const [campStatus, adsetStatus, adStatus] = await Promise.all([
-    fetchEntityStatuses(creds, "campaigns"),
-    fetchEntityStatuses(creds, "adsets"),
-    fetchEntityStatuses(creds, "ads"),
-  ]);
+  // O projeto pode ter VÁRIAS contas de anúncio — sincroniza cada uma e soma.
+  for (const account of creds.accounts) {
+    const rows = await fetchInsights(creds.token, account, sinceDays);
 
-  // hierarquia: upsert ad_account → campaigns → adsets → ads (resolve FKs)
-  const accId = await upsertAdAccount(supa, projectId, creds.account);
-  const campMap = await upsertLevel(
-    supa,
-    "campaigns",
-    dedupe(rows, "campaign_id", (r) => ({
-      meta_id: r.campaign_id,
-      name: r.campaign_name,
-      ad_account_id: accId,
-      effective_status: campStatus.get(r.campaign_id) ?? null,
-      project_id: projectId,
-    })),
-  );
-  const adsetMap = await upsertLevel(
-    supa,
-    "adsets",
-    dedupe(rows, "adset_id", (r) => ({
-      meta_id: r.adset_id,
-      name: r.adset_name,
-      campaign_id: campMap.get(r.campaign_id),
-      effective_status: adsetStatus.get(r.adset_id) ?? null,
-      project_id: projectId,
-    })),
-  );
-  const adMap = await upsertLevel(
-    supa,
-    "ads",
-    dedupe(rows, "ad_id", (r) => ({
-      meta_id: r.ad_id,
-      name: r.ad_name,
-      adset_id: adsetMap.get(r.adset_id),
-      effective_status: adStatus.get(r.ad_id) ?? null,
-      project_id: projectId,
-    })),
-  );
+    // status de veiculação por nível (endpoint separado dos insights)
+    const [campStatus, adsetStatus, adStatus] = await Promise.all([
+      fetchEntityStatuses(creds.token, account, "campaigns"),
+      fetchEntityStatuses(creds.token, account, "adsets"),
+      fetchEntityStatuses(creds.token, account, "ads"),
+    ]);
 
-  // meta_insights_daily (1 linha por ad+dia), carimbado com project_id
-  const insightRows = rows
-    .map((r) => {
-      const ad_id = adMap.get(r.ad_id);
-      if (!ad_id) return null;
-      return {
-        ad_id,
-        date: r.date_start,
-        spend: num(r.spend),
-        impressions: num(r.impressions),
-        clicks: num(r.clicks),
-        link_clicks: num(r.inline_link_clicks),
-        lpv: extractAction(r.actions, "landing_page_view"),
-        ic: extractAction(r.actions, "omni_initiated_checkout", "offsite_conversion.fb_pixel_initiate_checkout"),
-        purchases: extractAction(r.actions, "omni_purchase", "offsite_conversion.fb_pixel_purchase"),
-        video_3s: extractActionTotal(r.actions, "video_view"),
-        video_p75: extractMetric(r.video_p75_watched_actions),
-        video_p95: extractMetric(r.video_p95_watched_actions),
-        video_plays: extractMetric(r.video_play_actions),
-        synced_at: new Date().toISOString(),
+    // hierarquia: upsert ad_account → campaigns → adsets → ads (resolve FKs)
+    const accId = await upsertAdAccount(supa, projectId, account);
+    const campMap = await upsertLevel(
+      supa,
+      "campaigns",
+      dedupe(rows, "campaign_id", (r) => ({
+        meta_id: r.campaign_id,
+        name: r.campaign_name,
+        ad_account_id: accId,
+        effective_status: campStatus.get(r.campaign_id) ?? null,
         project_id: projectId,
-      };
-    })
-    .filter(Boolean) as Record<string, unknown>[];
+      })),
+    );
+    const adsetMap = await upsertLevel(
+      supa,
+      "adsets",
+      dedupe(rows, "adset_id", (r) => ({
+        meta_id: r.adset_id,
+        name: r.adset_name,
+        campaign_id: campMap.get(r.campaign_id),
+        effective_status: adsetStatus.get(r.adset_id) ?? null,
+        project_id: projectId,
+      })),
+    );
+    const adMap = await upsertLevel(
+      supa,
+      "ads",
+      dedupe(rows, "ad_id", (r) => ({
+        meta_id: r.ad_id,
+        name: r.ad_name,
+        adset_id: adsetMap.get(r.adset_id),
+        effective_status: adStatus.get(r.ad_id) ?? null,
+        project_id: projectId,
+      })),
+    );
 
-  for (let i = 0; i < insightRows.length; i += 500) {
-    const chunk = insightRows.slice(i, i + 500);
-    const { error } = await supa.from("meta_insights_daily").upsert(chunk, { onConflict: "ad_id,date" });
-    if (error) throw error;
+    // meta_insights_daily (1 linha por ad+dia), carimbado com project_id
+    const insightRows = rows
+      .map((r) => {
+        const ad_id = adMap.get(r.ad_id);
+        if (!ad_id) return null;
+        return {
+          ad_id,
+          date: r.date_start,
+          spend: num(r.spend),
+          impressions: num(r.impressions),
+          clicks: num(r.clicks),
+          link_clicks: num(r.inline_link_clicks),
+          lpv: extractAction(r.actions, "landing_page_view"),
+          ic: extractAction(r.actions, "omni_initiated_checkout", "offsite_conversion.fb_pixel_initiate_checkout"),
+          purchases: extractAction(r.actions, "omni_purchase", "offsite_conversion.fb_pixel_purchase"),
+          video_3s: extractActionTotal(r.actions, "video_view"),
+          video_p75: extractMetric(r.video_p75_watched_actions),
+          video_p95: extractMetric(r.video_p95_watched_actions),
+          video_plays: extractMetric(r.video_play_actions),
+          synced_at: new Date().toISOString(),
+          project_id: projectId,
+        };
+      })
+      .filter(Boolean) as Record<string, unknown>[];
+
+    for (let i = 0; i < insightRows.length; i += 500) {
+      const chunk = insightRows.slice(i, i + 500);
+      const { error } = await supa.from("meta_insights_daily").upsert(chunk, { onConflict: "ad_id,date" });
+      if (error) throw error;
+    }
+
+    campaigns += campMap.size;
+    adsets += adsetMap.size;
+    ads += adMap.size;
+    insights += insightRows.length;
   }
 
   // liga attributions.ad_id (utm_content -> ads.meta_id) agora que ads existe
@@ -131,10 +144,10 @@ async function syncProjectMeta(
   return {
     ok: true,
     project_id: projectId,
-    campaigns: campMap.size,
-    adsets: adsetMap.size,
-    ads: adMap.size,
-    insights: insightRows.length,
+    campaigns,
+    adsets,
+    ads,
+    insights,
     ad_links: typeof linked === "number" ? linked : undefined,
   };
 }
