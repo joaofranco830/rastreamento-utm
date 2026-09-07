@@ -84,7 +84,7 @@ export async function connectMetaAction(
   // primeiro sync mais fundo (90 dias) para trazer o histórico; best-effort.
   let synced = false;
   try {
-    const r = await runMetaSyncForProject(projectId, 90);
+    const r = await runMetaSyncForProject(projectId, 365);
     synced = r.ok;
   } catch {
     synced = false;
@@ -153,7 +153,7 @@ export async function listStoredAdAccountsAction(): Promise<{
 
 /**
  * Atualiza APENAS a lista de contas de anúncio do projeto (token intacto) e
- * re-sincroniza 90 dias. Só admin/owner.
+ * re-sincroniza 365 dias. Só admin/owner.
  */
 export async function updateAdAccountsAction(
   accountIds: string[],
@@ -183,7 +183,7 @@ export async function updateAdAccountsAction(
 
   let synced = false;
   try {
-    const r = await runMetaSyncForProject(projectId, 90);
+    const r = await runMetaSyncForProject(projectId, 365);
     synced = r.ok;
   } catch {
     synced = false;
@@ -192,4 +192,31 @@ export async function updateAdAccountsAction(
   revalidatePath("/configuracoes");
   revalidatePath("/configuracoes/meta");
   return { ok: true, synced };
+}
+
+/**
+ * Puxa o histórico do Meta para uma janela maior (mais de 90 dias). Reaproveita
+ * token/contas já guardados. Idempotente (upsert por ad+dia). Só admin/owner.
+ */
+export async function syncHistoryAction(days: number): Promise<{ ok: boolean; insights?: number; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner pode sincronizar." };
+  }
+
+  const n = Math.floor(days);
+  const window = Number.isFinite(n) ? Math.min(Math.max(n, 1), 730) : 365;
+
+  try {
+    const r = await runMetaSyncForProject(projectId, window);
+    if (!r.ok && !r.skipped) return { ok: false, error: r.error ?? "Falha ao sincronizar." };
+    revalidatePath("/funil/perpetuo");
+    return { ok: true, insights: r.insights };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: msg };
+  }
 }

@@ -5,8 +5,10 @@ import { getProjectCredential } from "@/lib/credentials";
 import { MetaWizard } from "./wizard";
 import { DisconnectMeta } from "./disconnect";
 import { ManageAccounts } from "./manage-accounts";
+import { SyncHistory } from "./sync-history";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // sync de histórico (até ~1 ano) pode levar mais tempo
 
 export default async function MetaConnectPage() {
   await requireUser();
@@ -51,6 +53,8 @@ export default async function MetaConnectPage() {
               <div className="mt-3">
                 <ManageAccounts />
               </div>
+              {/* Puxar mais histórico (para ver períodos > 90 dias no dashboard). */}
+              <SyncHistory />
             </div>
 
             <details>

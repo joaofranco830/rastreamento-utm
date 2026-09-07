@@ -8,6 +8,8 @@ const PRESETS = [
   { d: 14, l: "14 dias" },
   { d: 30, l: "30 dias" },
   { d: 90, l: "90 dias" },
+  { d: 180, l: "6 meses" },
+  { d: 365, l: "1 ano" },
 ];
 
 function spToday(offset = 0): string {
@@ -28,7 +30,7 @@ export default function DateButton() {
   const qTo = sp.get("to");
   const qDias = Number(sp.get("dias"));
   const custom = isDate(qFrom) && isDate(qTo);
-  const dias = [7, 14, 30, 90].includes(qDias) ? qDias : custom ? null : 14;
+  const dias = Number.isInteger(qDias) && qDias >= 1 && qDias <= 730 ? qDias : custom ? null : 14;
 
   const [cf, setCf] = useState(custom ? qFrom! : spToday(13));
   const [ct, setCt] = useState(custom ? qTo! : spToday(0));

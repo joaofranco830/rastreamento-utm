@@ -76,7 +76,9 @@ export function resolveRange(params: { from?: string; to?: string; dias?: string
     const to = params.to!;
     return from <= to ? { from, to, dias: null } : { from: to, to: from, dias: null };
   }
-  const dias = [7, 14, 30, 90].includes(Number(params.dias)) ? Number(params.dias) : 14;
+  // Aceita qualquer preset de 1 a 730 dias (2 anos); fora disso, 14 (padrão).
+  const n = Number(params.dias);
+  const dias = Number.isInteger(n) && n >= 1 && n <= 730 ? n : 14;
   return { from: spDate(dias - 1), to: spDate(0), dias };
 }
 
