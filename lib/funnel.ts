@@ -8,6 +8,8 @@ export interface SourceFilters {
   product?: { mode: "all" | "included" | "offer"; product_ids: string[] };
   recurrence?: "all" | "first";
   ad_account?: string | null;
+  /** Contas de anúncio (meta_account_id) que ESTE funil mostra. Vazio/ausente = todas. */
+  ad_accounts?: string[];
 }
 
 export interface FunnelRow {

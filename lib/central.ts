@@ -82,11 +82,18 @@ export function resolveRange(params: { from?: string; to?: string; dias?: string
   return { from: spDate(dias - 1), to: spDate(0), dias };
 }
 
-export async function getCentral(projectId: number, from: string, to: string): Promise<CentralData> {
+export async function getCentral(
+  projectId: number,
+  from: string,
+  to: string,
+  adAccounts?: string[] | null,
+): Promise<CentralData> {
   const supabase = await createClient();
+  // Vazio/ausente = todas as contas; senão, filtra o investido/Meta por conta.
+  const p_ad_accounts = adAccounts && adAccounts.length > 0 ? adAccounts : null;
   const [s, t, prods, cfg] = await Promise.all([
-    supabase.rpc("central_summary", { p_project_id: projectId, p_from: from, p_to: to }),
-    supabase.rpc("central_timeseries", { p_project_id: projectId, p_from: from, p_to: to }),
+    supabase.rpc("central_summary", { p_project_id: projectId, p_from: from, p_to: to, p_ad_accounts }),
+    supabase.rpc("central_timeseries", { p_project_id: projectId, p_from: from, p_to: to, p_ad_accounts }),
     supabase.from("products").select("included").eq("project_id", projectId),
     supabase.from("tracking_config").select("campaign_name_tags").eq("project_id", projectId).maybeSingle(),
   ]);

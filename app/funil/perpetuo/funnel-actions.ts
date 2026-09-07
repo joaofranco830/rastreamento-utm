@@ -24,6 +24,28 @@ export async function saveDashboardConfigAction(cards: string[]): Promise<{ ok: 
   return { ok: true };
 }
 
+/** Salva quais contas de anúncio ESTE funil mostra no dashboard (vazio = todas). */
+export async function saveDashboardAccountsAction(accountIds: string[]): Promise<{ ok: boolean; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin", "funcionario"]);
+  } catch {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const funnel = await getPerpetuoFunnel(projectId);
+  if (!funnel) return { ok: false, error: "Funil não encontrado." };
+
+  const accs = Array.from(new Set((accountIds ?? []).map((a) => a.trim().replace(/^act_/, "")).filter(Boolean)));
+  const source_filters = { ...(funnel.source_filters ?? {}), ad_accounts: accs };
+
+  const admin = getSupabaseAdmin();
+  const { error } = await admin.from("funnels").update({ source_filters }).eq("id", funnel.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/funil/perpetuo");
+  return { ok: true };
+}
+
 export interface FunnelConfigInput {
   campaignMode: "all" | "contains";
   tags: string[];
