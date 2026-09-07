@@ -131,15 +131,21 @@ export interface MetaInsightRow {
   date_start: string;
 }
 
-/** Insights por anúncio de UMA conta, 1 linha por (anúncio, dia), na janela recente. */
-export async function fetchInsights(token: string, account: string, sinceDays = 14): Promise<MetaInsightRow[]> {
-  const until = new Date();
-  const since = new Date(until.getTime() - sinceDays * 86400000);
+const INSIGHT_FIELDS =
+  "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,inline_link_clicks,actions," +
+  "video_p75_watched_actions,video_p95_watched_actions,video_play_actions,date_start";
+const CHUNK_DAYS = 90; // janelas <=90 dias — o Meta rejeita time_range muito grande de uma vez
+
+/** Uma janela de insights (until exclusivo-de-mais-1-dia é tratado pelo Meta). */
+async function fetchInsightsWindow(
+  token: string,
+  account: string,
+  since: Date,
+  until: Date,
+): Promise<MetaInsightRow[]> {
   const params = new URLSearchParams({
     level: "ad",
-    fields:
-      "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,inline_link_clicks,actions," +
-      "video_p75_watched_actions,video_p95_watched_actions,video_play_actions,date_start",
+    fields: INSIGHT_FIELDS,
     action_attribution_windows: JSON.stringify([META_ATTR_WINDOW]),
     time_increment: "1",
     time_range: JSON.stringify({ since: ymd(since), until: ymd(until) }),
@@ -148,6 +154,25 @@ export async function fetchInsights(token: string, account: string, sinceDays = 
   });
   const data = await getAllPages(`${BASE}/${normAccount(account)}/insights?${params.toString()}`);
   return data as unknown as MetaInsightRow[];
+}
+
+/**
+ * Insights por anúncio de UMA conta, 1 linha por (anúncio, dia). Janelas longas
+ * (>90 dias) são divididas em pedaços de <=90 dias e concatenadas.
+ */
+export async function fetchInsights(token: string, account: string, sinceDays = 14): Promise<MetaInsightRow[]> {
+  const end = new Date();
+  const start = new Date(end.getTime() - sinceDays * 86400000);
+  const out: MetaInsightRow[] = [];
+  let winSince = start;
+  while (winSince < end) {
+    const winUntil = new Date(Math.min(winSince.getTime() + CHUNK_DAYS * 86400000, end.getTime()));
+    const rows = await fetchInsightsWindow(token, account, winSince, winUntil);
+    out.push(...rows);
+    // próximo pedaço começa no dia seguinte ao fim deste (evita sobreposição de 1 dia)
+    winSince = new Date(winUntil.getTime() + 86400000);
+  }
+  return out;
 }
 
 /**
