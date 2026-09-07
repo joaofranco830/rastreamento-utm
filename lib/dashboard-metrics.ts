@@ -38,6 +38,34 @@ export function orderedActiveMetrics(cards: string[] | null | undefined): string
 }
 
 // ---------------------------------------------------------------------------
+// Blocos de conteúdo do Dashboard (abaixo dos cards) — selecionáveis/ordenáveis.
+// ---------------------------------------------------------------------------
+export interface BlockDef {
+  key: string;
+  label: string;
+}
+
+export const BLOCK_CATALOG: BlockDef[] = [
+  { key: "revenue_by_role", label: "Faturamento por etapa" },
+  { key: "products", label: "Tabela de produtos" },
+  { key: "funnel", label: "Métricas do funil" },
+  { key: "timeseries", label: "Evolução diária" },
+  { key: "refund", label: "Detalhes de reembolso" },
+];
+
+export const BLOCK_LABEL: Record<string, string> = Object.fromEntries(
+  BLOCK_CATALOG.map((b) => [b.key, b.label]),
+);
+
+/** Ordem/seleção efetiva dos blocos: usa a config salva; se vazia, todos na ordem do catálogo. */
+export function orderedBlocks(blocks: string[] | null | undefined): string[] {
+  const all = BLOCK_CATALOG.map((b) => b.key);
+  if (!blocks || blocks.length === 0) return all;
+  const known = new Set(all);
+  return blocks.filter((k) => known.has(k));
+}
+
+// ---------------------------------------------------------------------------
 // Construtor de métricas — CATÁLOGO DE DADOS (átomos + derivados).
 // Cada campo tem um NOME AMIGÁVEL (o usuário nunca vê a chave técnica).
 // ---------------------------------------------------------------------------

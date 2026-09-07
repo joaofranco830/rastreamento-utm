@@ -7,6 +7,8 @@ import MetricFormulaBuilder from "./metric-formula-builder";
 import {
   METRIC_CATALOG,
   METRIC_LABEL,
+  BLOCK_CATALOG,
+  BLOCK_LABEL,
   type FieldDef,
   type CustomMetric,
 } from "@/lib/dashboard-metrics";
@@ -32,6 +34,17 @@ function buildItems(cards: string[] | null, customIds: string[]): Item[] {
   ];
 }
 
+/** Idem para os blocos de conteúdo. */
+function buildBlockItems(blocks: string[] | null): Item[] {
+  const catalog = BLOCK_CATALOG.map((b) => b.key);
+  const active = (blocks ?? catalog).filter((k) => catalog.includes(k));
+  const rest = catalog.filter((k) => !active.includes(k));
+  return [
+    ...active.map((k) => ({ key: k, enabled: true })),
+    ...rest.map((k) => ({ key: k, enabled: blocks ? false : true })),
+  ];
+}
+
 /** Botão + modal de "Configurar métricas": selecionar, reordenar (arrastar), criar personalizadas e pré-definições. */
 export default function MetricsConfig({
   current,
@@ -39,22 +52,27 @@ export default function MetricsConfig({
   customMetrics: initialCustom,
   fields,
   values,
+  blocks: initialBlocks,
 }: {
   current: string[] | null;
   presets: Preset[];
   customMetrics: CustomMetric[];
   fields: FieldDef[];
   values: Record<string, number | null>;
+  blocks: string[] | null;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"metrics" | "blocks">("metrics");
   const [customMetrics, setCustomMetrics] = useState<CustomMetric[]>(initialCustom);
   const [items, setItems] = useState<Item[]>(() => buildItems(current, initialCustom.map((c) => c.id)));
+  const [blockItems, setBlockItems] = useState<Item[]>(() => buildBlockItems(initialBlocks));
   const [presets, setPresets] = useState<Preset[]>(initialPresets);
   const [presetName, setPresetName] = useState("Personalizado");
   const [q, setQ] = useState("");
   const [drag, setDrag] = useState<number | null>(null);
+  const [blockDrag, setBlockDrag] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [builder, setBuilder] = useState<{ initial: CustomMetric | null } | null>(null);
 
@@ -84,6 +102,22 @@ export default function MetricsConfig({
       return next;
     });
   }
+
+  function toggleBlock(key: string) {
+    setBlockItems((prev) => prev.map((i) => (i.key === key ? { ...i, enabled: !i.enabled } : i)));
+  }
+
+  function reorderBlock(from: number, to: number) {
+    if (from === to) return;
+    setBlockItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }
+
+  const activeBlocks = () => blockItems.filter((i) => i.enabled).map((i) => i.key);
 
   function loadPreset(name: string) {
     setPresetName(name);
@@ -128,7 +162,7 @@ export default function MetricsConfig({
   function apply() {
     setMsg(null);
     start(async () => {
-      const r = await saveDashboardLayoutAction({ cards: activeCards(), presets, customMetrics });
+      const r = await saveDashboardLayoutAction({ cards: activeCards(), presets, customMetrics, blocks: activeBlocks() });
       if (!r.ok) {
         setMsg(r.error ?? "Falha ao salvar.");
         return;
@@ -144,7 +178,9 @@ export default function MetricsConfig({
         onClick={() => {
           setCustomMetrics(initialCustom);
           setItems(buildItems(current, initialCustom.map((c) => c.id)));
+          setBlockItems(buildBlockItems(initialBlocks));
           setPresets(initialPresets);
+          setTab("metrics");
           setMsg(null);
           setOpen(true);
         }}
@@ -165,6 +201,56 @@ export default function MetricsConfig({
               <button onClick={() => setOpen(false)} className="rounded-lg border border-white/[.14] px-2 py-1 text-sm text-zinc-400 hover:bg-white/[.06]">✕</button>
             </div>
 
+            {/* abas: Métricas (cards) | Blocos (conteúdo) */}
+            <div className="mb-4 inline-flex overflow-hidden rounded-lg border border-white/[.14] text-sm">
+              <button
+                onClick={() => setTab("metrics")}
+                className={`px-3 py-1.5 transition-colors ${tab === "metrics" ? "bg-eletrico font-medium text-white" : "text-zinc-400 hover:bg-white/[.06]"}`}
+              >
+                Métricas
+              </button>
+              <button
+                onClick={() => setTab("blocks")}
+                className={`px-3 py-1.5 transition-colors ${tab === "blocks" ? "bg-eletrico font-medium text-white" : "text-zinc-400 hover:bg-white/[.06]"}`}
+              >
+                Blocos
+              </button>
+            </div>
+
+            {tab === "blocks" && (
+              <div>
+                <p className="mb-3 text-xs text-aco">Escolha e reordene (arraste) os blocos de conteúdo que aparecem abaixo dos cards.</p>
+                <div className="max-h-[46vh] space-y-1.5 overflow-y-auto pr-1">
+                  {blockItems.map((it, idx) => (
+                    <div
+                      key={it.key}
+                      draggable
+                      onDragStart={() => setBlockDrag(idx)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (blockDrag !== null) reorderBlock(blockDrag, idx);
+                        setBlockDrag(null);
+                      }}
+                      className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${blockDrag === idx ? "border-eletrico" : "border-white/[.1]"} bg-white/[.02]`}
+                    >
+                      <span className="cursor-grab select-none text-aco" title="Arraste para reordenar" aria-hidden>⠿</span>
+                      <button
+                        onClick={() => toggleBlock(it.key)}
+                        role="switch"
+                        aria-checked={it.enabled}
+                        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${it.enabled ? "bg-eletrico" : "bg-white/[.14]"}`}
+                      >
+                        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${it.enabled ? "left-4" : "left-0.5"}`} />
+                      </button>
+                      <span className="flex-1 text-sm">{BLOCK_LABEL[it.key]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tab === "metrics" && (
+            <div>
             {/* presets */}
             <div className="mb-3 flex items-center gap-2">
               <select
@@ -258,14 +344,20 @@ export default function MetricsConfig({
                 </div>
               ))}
             </div>
+            </div>
+            )}
 
             {msg && <p className="mt-3 text-xs text-zinc-400">{msg}</p>}
 
             {/* footer */}
             <div className="mt-4 flex items-center justify-between gap-2">
-              <button onClick={savePreset} className="rounded-lg border border-white/[.18] px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-white/[.06]">
-                Salvar pré-definição
-              </button>
+              {tab === "metrics" ? (
+                <button onClick={savePreset} className="rounded-lg border border-white/[.18] px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-white/[.06]">
+                  Salvar pré-definição
+                </button>
+              ) : (
+                <span />
+              )}
               <button onClick={apply} disabled={pending} className="rounded-lg bg-lima px-4 py-2 text-sm font-bold text-[var(--noite)] disabled:opacity-50">
                 {pending ? "Aplicando…" : "Aplicar configuração"}
               </button>

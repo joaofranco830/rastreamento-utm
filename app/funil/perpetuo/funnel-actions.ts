@@ -5,7 +5,9 @@ import { requireRole } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { getPerpetuoFunnel } from "@/lib/funnel";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import type { CustomMetric } from "@/lib/dashboard-metrics";
+import { BLOCK_CATALOG, type CustomMetric } from "@/lib/dashboard-metrics";
+
+const BLOCK_KEYS = new Set(BLOCK_CATALOG.map((b) => b.key));
 
 /** Salva só a ordem/seleção ativa de cartões, preservando as pré-definições. */
 export async function saveDashboardConfigAction(cards: string[]): Promise<{ ok: boolean; error?: string }> {
@@ -31,6 +33,7 @@ export async function saveDashboardLayoutAction(input: {
   cards: string[];
   presets: { name: string; cards: string[] }[];
   customMetrics?: CustomMetric[];
+  blocks?: string[];
 }): Promise<{ ok: boolean; error?: string }> {
   const projectId = await getActiveProjectId();
   if (!projectId) return { ok: false, error: "Sem projeto ativo." };
@@ -47,9 +50,12 @@ export async function saveDashboardLayoutAction(input: {
     .map((p) => ({ name: String(p.name ?? "").trim().slice(0, 60), cards: (p.cards ?? []).map(String) }))
     .filter((p) => p.name.length > 0);
   const custom_metrics = sanitizeCustomMetrics(input.customMetrics);
+  const blocks = Array.isArray(input.blocks)
+    ? input.blocks.map(String).filter((k) => BLOCK_KEYS.has(k))
+    : undefined;
 
   const admin = getSupabaseAdmin();
-  const dashboard_config = { cards: (input.cards ?? []).map(String), presets, custom_metrics };
+  const dashboard_config = { cards: (input.cards ?? []).map(String), presets, custom_metrics, ...(blocks ? { blocks } : {}) };
   const { error } = await admin.from("funnels").update({ dashboard_config }).eq("id", funnel.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/funil/perpetuo");

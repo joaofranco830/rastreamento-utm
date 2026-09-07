@@ -7,12 +7,14 @@ import { brl, inteiro, pct, mult } from "@/lib/format";
 import TimeseriesChart from "../../central/timeseries-chart";
 import DateButton from "./date-button";
 import MetricsConfig from "./metrics-config";
+import ProductTable from "./product-table";
 import {
   METRIC_CATALOG,
   allFields,
   resolveField,
   evalFormula,
   formatValue,
+  orderedBlocks,
 } from "@/lib/dashboard-metrics";
 
 export const dynamic = "force-dynamic";
@@ -97,34 +99,11 @@ export default async function DashboardPage({
       : METRIC_CATALOG.map((m) => m.key);
   const visibleCards = order.map((key) => ({ key, node: nodeOf[key] })).filter((c) => c.node);
 
-  return (
-    <>
-      {/* Controles desta aba: configurar métricas + período. */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-lg text-foreground">DASHBOARD GERAL</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <MetricsConfig
-            current={cfg?.cards ?? null}
-            presets={cfg?.presets ?? []}
-            customMetrics={customs}
-            fields={fields}
-            values={values}
-          />
-          <DateButton />
-        </div>
-      </div>
-
-      {visibleCards.length > 0 && (
-        <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {visibleCards.map((c) => (
-            <div key={c.key}>{c.node}</div>
-          ))}
-        </section>
-      )}
-
-      {/* Faturamento por papel */}
+  // Blocos de conteúdo (abaixo dos cards) — renderizados na ORDEM salva.
+  const blockOf: Record<string, React.ReactNode> = {
+    revenue_by_role: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Faturamento por papel</h2>
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Faturamento por etapa</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {ROLE_ORDER.map((r) => {
             const v = s.revenue_by_role[r] ?? 0;
@@ -139,8 +118,14 @@ export default async function DashboardPage({
           })}
         </div>
       </section>
-
-      {/* Funil */}
+    ),
+    products: (
+      <section className="mb-8">
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Produtos</h2>
+        <ProductTable rows={s.by_product} />
+      </section>
+    ),
+    funnel: (
       <section className="mb-8">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Funil</h2>
         <div className="flex flex-wrap gap-3">
@@ -150,16 +135,16 @@ export default async function DashboardPage({
           <FunnelStep label="Conv. funil" value={pct(s.funnel.funnel_conv)} />
         </div>
       </section>
-
-      {/* Gráfico temporal */}
+    ),
+    timeseries: (
       <section className="mb-8">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Evolução diária</h2>
         <div className="rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4">
           <TimeseriesChart data={d.series} />
         </div>
       </section>
-
-      {/* Reembolso */}
+    ),
+    refund: (
       <section className="mb-4">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Reembolso</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -169,6 +154,41 @@ export default async function DashboardPage({
           <Card label="Taxa (valor)" value={pct(s.refund_rate_value)} />
         </div>
       </section>
+    ),
+  };
+  const visibleBlocks = orderedBlocks(cfg?.blocks ?? null)
+    .map((key) => ({ key, node: blockOf[key] }))
+    .filter((b) => b.node);
+
+  return (
+    <>
+      {/* Controles desta aba: configurar métricas + período. */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg text-foreground">DASHBOARD GERAL</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <MetricsConfig
+            current={cfg?.cards ?? null}
+            presets={cfg?.presets ?? []}
+            customMetrics={customs}
+            fields={fields}
+            values={values}
+            blocks={cfg?.blocks ?? null}
+          />
+          <DateButton />
+        </div>
+      </div>
+
+      {visibleCards.length > 0 && (
+        <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {visibleCards.map((c) => (
+            <div key={c.key}>{c.node}</div>
+          ))}
+        </section>
+      )}
+
+      {visibleBlocks.map((b) => (
+        <div key={b.key}>{b.node}</div>
+      ))}
     </>
   );
 }

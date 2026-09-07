@@ -25,6 +25,8 @@ export interface DashboardConfig {
   presets?: DashboardPreset[];
   /** Métricas personalizadas (fórmulas) criadas pelo usuário neste funil. */
   custom_metrics?: CustomMetric[];
+  /** Blocos de conteúdo abaixo dos cards, JÁ na ordem em que aparecem. */
+  blocks?: string[];
 }
 
 export interface FunnelRow {
