@@ -103,6 +103,20 @@ export default async function DashboardPage({
   const refundRows = s.by_product.filter((p) => p.refund_count > 0 || p.refunded_value > 0);
   const totalRefunded = s.refunded;
 
+  // Ascensão: taxa de compra de bump/upsell/downsell sobre o nº de vendas do front.
+  const front = s.net_sales_principal;
+  const ascRate = (v: number) => (front > 0 ? v / front : null);
+  const ascRoles = [
+    { role: "order_bump", label: "Order bump" },
+    { role: "upsell", label: "Upsell" },
+    { role: "downsell", label: "Downsell" },
+  ];
+  const ascTotalSales =
+    (s.sales_by_role.order_bump ?? 0) + (s.sales_by_role.upsell ?? 0) + (s.sales_by_role.downsell ?? 0);
+  const ascProducts = s.by_product.filter(
+    (p) => ["order_bump", "upsell", "downsell"].includes(p.role) && p.net_sales > 0,
+  );
+
   // Blocos de conteúdo (abaixo dos cards) — renderizados na ORDEM salva.
   const blockOf: Record<string, React.ReactNode> = {
     revenue_by_role: (
@@ -143,13 +157,57 @@ export default async function DashboardPage({
             value={pct(s.funnel.to_checkout)}
             hint={`${inteiro(s.checkouts)} checkouts${s.checkouts_source === "meta" ? " (Meta)" : ""}`}
           />
-          <FunnelStep label="Conv. checkout" value={pct(s.funnel.checkout_conv)} />
-          <FunnelStep label="Conv. funil" value={pct(s.funnel.funnel_conv)} />
+          <FunnelStep label="Conv. checkout (front)" value={pct(s.funnel.checkout_conv)} hint={`${inteiro(front)} vendas do front`} />
+          <FunnelStep label="Conv. funil (front)" value={pct(s.funnel.funnel_conv)} />
         </div>
         {(s.pageviews_source === "meta" || s.checkouts_source === "meta") && (
           <p className="mt-2 text-[11px] text-zinc-500">
             Sem dados do nosso pixel no período — page views/checkouts vindos do Meta (LPV / checkout iniciado).
           </p>
+        )}
+      </section>
+    ),
+    ascension: (
+      <section className="mb-8">
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">
+          Ascensão <span className="text-zinc-600">· sobre {inteiro(front)} vendas do front</span>
+        </h2>
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-lima/30 bg-[var(--noite-2)] p-4">
+            <p className="font-mono text-[11px] uppercase tracking-wider text-aco">Taxa de ascensão</p>
+            <p className="font-display mt-2 text-2xl text-lima">{pct(ascRate(ascTotalSales))}</p>
+            <p className="mt-1 text-xs text-zinc-400">{inteiro(ascTotalSales)} ofertas compradas</p>
+          </div>
+          {ascRoles.map((r) => {
+            const sales = s.sales_by_role[r.role] ?? 0;
+            return (
+              <Card key={r.role} label={r.label} value={pct(ascRate(sales))} sub={`${inteiro(sales)} vendas`} />
+            );
+          })}
+        </div>
+        {ascProducts.length > 0 && (
+          <div className="overflow-x-auto rounded-xl border border-white/[.1] bg-[var(--noite-2)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left font-mono text-[10px] uppercase tracking-wider text-aco">
+                  <th className="px-3 py-2 font-normal">Produto</th>
+                  <th className="px-3 py-2 font-normal">Etapa</th>
+                  <th className="px-3 py-2 text-right font-normal">Vendas</th>
+                  <th className="px-3 py-2 text-right font-normal">Taxa de compra</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ascProducts.map((p) => (
+                  <tr key={p.product_id} className="border-t border-white/[.06]">
+                    <td className="px-3 py-2 text-foreground">{p.name}</td>
+                    <td className="px-3 py-2 text-zinc-400">{ROLE_LABELS[p.role] ?? p.role}</td>
+                    <td className="px-3 py-2 text-right text-foreground">{inteiro(p.net_sales)}</td>
+                    <td className="px-3 py-2 text-right font-display text-lima">{pct(ascRate(p.net_sales))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     ),
