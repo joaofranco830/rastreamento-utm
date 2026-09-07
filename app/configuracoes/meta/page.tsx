@@ -6,6 +6,7 @@ import { getProjectCredential } from "@/lib/credentials";
 import Shell from "../../shell";
 import { MetaWizard } from "./wizard";
 import { DisconnectMeta } from "./disconnect";
+import { ManageAccounts } from "./manage-accounts";
 
 export const dynamic = "force-dynamic";
 
@@ -42,27 +43,42 @@ export default async function MetaConnectPage() {
           nova depois.
         </p>
 
-        {connected && (
-          <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-400/10 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                  BM conectada ✓ — {accountList.length} {accountList.length === 1 ? "conta" : "contas"}
-                </p>
-                <p className="mt-0.5 font-mono text-xs text-zinc-500">
-                  {accountList.map((a) => `act_${a}`).join(", ")}
-                </p>
+        {connected ? (
+          <>
+            <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-400/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                    BM conectada ✓ — {accountList.length} {accountList.length === 1 ? "conta" : "contas"}
+                  </p>
+                  <p className="mt-0.5 font-mono text-xs text-zinc-500">
+                    {accountList.map((a) => `act_${a}`).join(", ")}
+                  </p>
+                </div>
+                <DisconnectMeta />
               </div>
-              <DisconnectMeta />
+              {/* Ajustar as contas usando o token já guardado — sem recolar o token. */}
+              <div className="mt-3">
+                <ManageAccounts />
+              </div>
             </div>
-          </div>
+
+            <details>
+              <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                Trocar de BM / colar um token novo
+              </summary>
+              <div className="mt-3">
+                <MetaWizard alreadyConnected={connected} />
+              </div>
+            </details>
+          </>
+        ) : (
+          <MetaWizard alreadyConnected={connected} />
         )}
 
-        <MetaWizard alreadyConnected={connected} />
-
         <p className="mt-6 text-xs text-zinc-400">
-          🔒 O token fica <strong>cifrado</strong> no cofre do projeto (nunca no navegador nem em logs). Trocar de BM é só
-          repetir o passo a passo — a nova conexão substitui a anterior.
+          🔒 O token fica <strong>cifrado</strong> no cofre do projeto (nunca no navegador nem em logs). Para só ajustar quais
+          contas de anúncio entram, use <strong>“Escolher contas de anúncio”</strong> — o token guardado é reaproveitado.
         </p>
       </div>
     </Shell>

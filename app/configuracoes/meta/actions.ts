@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
-import { setProjectCredential } from "@/lib/credentials";
+import { setProjectCredential, getProjectCredential } from "@/lib/credentials";
 import { listAdAccounts } from "@/lib/meta/client";
+import { parseAccounts } from "@/lib/meta/creds";
 import { runMetaSyncForProject } from "@/lib/meta/sync";
 
 export interface AdAccountOption {
@@ -115,4 +116,80 @@ export async function disconnectMetaAction(): Promise<{ ok: boolean; error?: str
   revalidatePath("/configuracoes");
   revalidatePath("/configuracoes/meta");
   return { ok: true };
+}
+
+/**
+ * Lista as contas que o token JÁ GUARDADO enxerga + marca as atualmente
+ * selecionadas. Usado pelo gerenciador — não precisa colar o token de novo.
+ */
+export async function listStoredAdAccountsAction(): Promise<{
+  ok: boolean;
+  accounts?: AdAccountOption[];
+  selected?: string[];
+  error?: string;
+}> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner pode gerenciar o Meta." };
+  }
+
+  const token = await getProjectCredential(projectId, "meta", "token").catch(() => null);
+  if (!token) return { ok: false, error: "Nenhum token salvo. Conecte a BM primeiro." };
+
+  try {
+    const accounts = await listAdAccounts(token);
+    const selectedRaw = await getProjectCredential(projectId, "meta", "account_id").catch(() => null);
+    const selected = parseAccounts(selectedRaw);
+    return { ok: true, accounts, selected };
+  } catch (e) {
+    const err = e as { isAuth?: boolean; message?: string };
+    if (err.isAuth) return { ok: false, error: "O token salvo expirou. Reconecte a BM (colando um novo token)." };
+    return { ok: false, error: err.message ?? "Falha ao consultar o Meta." };
+  }
+}
+
+/**
+ * Atualiza APENAS a lista de contas de anúncio do projeto (token intacto) e
+ * re-sincroniza 90 dias. Só admin/owner.
+ */
+export async function updateAdAccountsAction(
+  accountIds: string[],
+): Promise<{ ok: boolean; synced?: boolean; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner pode gerenciar o Meta." };
+  }
+
+  const token = await getProjectCredential(projectId, "meta", "token").catch(() => null);
+  if (!token) return { ok: false, error: "Nenhum token salvo. Conecte a BM primeiro." };
+
+  const accs = Array.from(
+    new Set((accountIds ?? []).map((a) => a.trim().replace(/^act_/, "")).filter(Boolean)),
+  );
+  if (accs.length === 0) return { ok: false, error: "Selecione ao menos uma conta de anúncio." };
+
+  try {
+    // só a lista de contas muda; o token permanece o mesmo no cofre.
+    await setProjectCredential(projectId, "meta", "account_id", accs.join(","));
+  } catch {
+    return { ok: false, error: "Falha ao salvar a seleção." };
+  }
+
+  let synced = false;
+  try {
+    const r = await runMetaSyncForProject(projectId, 90);
+    synced = r.ok;
+  } catch {
+    synced = false;
+  }
+
+  revalidatePath("/configuracoes");
+  revalidatePath("/configuracoes/meta");
+  return { ok: true, synced };
 }
