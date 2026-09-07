@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import type { CustomMetric } from "@/lib/dashboard-metrics";
 
 /** Acesso ao funil ativo do projeto (por enquanto, 1 Perpétuo por projeto). */
 
@@ -18,10 +19,12 @@ export interface DashboardPreset {
 }
 
 export interface DashboardConfig {
-  /** Cartões ativos, JÁ na ordem em que aparecem. */
+  /** Cartões ativos, JÁ na ordem em que aparecem (chaves-base ou ids `custom_*`). */
   cards?: string[];
   /** Pré-definições nomeadas que o usuário salvou. */
   presets?: DashboardPreset[];
+  /** Métricas personalizadas (fórmulas) criadas pelo usuário neste funil. */
+  custom_metrics?: CustomMetric[];
 }
 
 export interface FunnelRow {

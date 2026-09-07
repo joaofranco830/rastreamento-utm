@@ -125,15 +125,19 @@ export interface MetaInsightRow {
   actions?: Array<{ action_type: string; value?: string; [w: string]: unknown }>;
   // Vídeo: cada campo é um array de actions com `value` (vazio em estático).
   // (views de 3s vêm de actions[action_type=video_view] — não há campo dedicado.)
+  video_p25_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
+  video_p50_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
   video_p75_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
   video_p95_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
+  video_p100_watched_actions?: Array<{ value?: string; [w: string]: unknown }>;
   video_play_actions?: Array<{ value?: string; [w: string]: unknown }>;
   date_start: string;
 }
 
 const INSIGHT_FIELDS =
   "ad_id,ad_name,adset_id,adset_name,campaign_id,campaign_name,spend,impressions,clicks,inline_link_clicks,actions," +
-  "video_p75_watched_actions,video_p95_watched_actions,video_play_actions,date_start";
+  "video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions," +
+  "video_p95_watched_actions,video_p100_watched_actions,video_play_actions,date_start";
 const CHUNK_DAYS = 90; // janelas <=90 dias — o Meta rejeita time_range muito grande de uma vez
 
 /** Uma janela de insights (until exclusivo-de-mais-1-dia é tratado pelo Meta). */

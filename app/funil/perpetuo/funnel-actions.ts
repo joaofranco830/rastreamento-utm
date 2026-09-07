@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { getPerpetuoFunnel } from "@/lib/funnel";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import type { CustomMetric } from "@/lib/dashboard-metrics";
 
 /** Salva só a ordem/seleção ativa de cartões, preservando as pré-definições. */
 export async function saveDashboardConfigAction(cards: string[]): Promise<{ ok: boolean; error?: string }> {
@@ -25,10 +26,11 @@ export async function saveDashboardConfigAction(cards: string[]): Promise<{ ok: 
   return { ok: true };
 }
 
-/** Salva a config completa do dashboard: cartões ativos (ordenados) + pré-definições. */
+/** Salva a config completa do dashboard: cartões ativos (ordenados) + pré-definições + métricas personalizadas. */
 export async function saveDashboardLayoutAction(input: {
   cards: string[];
   presets: { name: string; cards: string[] }[];
+  customMetrics?: CustomMetric[];
 }): Promise<{ ok: boolean; error?: string }> {
   const projectId = await getActiveProjectId();
   if (!projectId) return { ok: false, error: "Sem projeto ativo." };
@@ -44,13 +46,44 @@ export async function saveDashboardLayoutAction(input: {
   const presets = (input.presets ?? [])
     .map((p) => ({ name: String(p.name ?? "").trim().slice(0, 60), cards: (p.cards ?? []).map(String) }))
     .filter((p) => p.name.length > 0);
+  const custom_metrics = sanitizeCustomMetrics(input.customMetrics);
 
   const admin = getSupabaseAdmin();
-  const dashboard_config = { cards: (input.cards ?? []).map(String), presets };
+  const dashboard_config = { cards: (input.cards ?? []).map(String), presets, custom_metrics };
   const { error } = await admin.from("funnels").update({ dashboard_config }).eq("id", funnel.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/funil/perpetuo");
   return { ok: true };
+}
+
+const FORMATS = new Set(["number", "money", "percent", "multiplier"]);
+const OPS = new Set(["+", "-", "*", "/"]);
+
+/** Valida/limpa métricas personalizadas antes de gravar (defesa server-side). */
+function sanitizeCustomMetrics(list: CustomMetric[] | undefined): CustomMetric[] {
+  const out: CustomMetric[] = [];
+  const seen = new Set<string>();
+  for (const m of list ?? []) {
+    const id = String(m?.id ?? "").trim();
+    if (!/^custom_[a-z0-9]{4,16}$/.test(id) || seen.has(id)) continue;
+    const name = String(m?.name ?? "").trim().slice(0, 60);
+    if (!name) continue;
+    const format = FORMATS.has(m?.format) ? m.format : "number";
+    const formula = (Array.isArray(m?.formula) ? m.formula : [])
+      .map((t) => {
+        if (t?.kind === "field" && typeof t.key === "string") return { kind: "field" as const, key: t.key.slice(0, 64) };
+        if (t?.kind === "num" && isFinite(Number(t.value))) return { kind: "num" as const, value: Number(t.value) };
+        if (t?.kind === "op" && OPS.has(t.op)) return { kind: "op" as const, op: t.op };
+        if (t?.kind === "lp") return { kind: "lp" as const };
+        if (t?.kind === "rp") return { kind: "rp" as const };
+        return null;
+      })
+      .filter(Boolean) as CustomMetric["formula"];
+    if (formula.length === 0) continue;
+    seen.add(id);
+    out.push({ id, name, format, formula });
+  }
+  return out.slice(0, 50); // teto de segurança
 }
 
 /** Salva quais contas de anúncio ESTE funil mostra no dashboard (vazio = todas). */
