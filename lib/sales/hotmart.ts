@@ -22,6 +22,7 @@ export interface ParsedHotmart {
   contactPhone: string | null;
   // V2-1: produto + comprador (crus, server-only).
   productId: string | null; // data.product.id (Hotmart)
+  productName: string | null; // data.product.name (Hotmart)
   buyerName: string | null;
   buyerDocument: string | null;
   buyerAddress: Record<string, unknown> | null;
@@ -153,6 +154,7 @@ export function parseHotmartPayload(body: unknown): ParsedHotmart {
     contactEmail: str(buyer.email),
     contactPhone: str(buyer.checkout_phone) || str(buyer.phone),
     productId: idStr(product.id),
+    productName: str(product.name),
     buyerName: str(buyer.name),
     buyerDocument: str(buyer.document) || str(buyer.doc),
     buyerAddress: Object.keys(buyerAddr).length > 0 ? buyerAddr : null,

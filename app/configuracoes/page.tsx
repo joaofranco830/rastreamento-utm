@@ -51,8 +51,8 @@ export default async function ConfiguracoesPage() {
       .select("id", { count: "exact", head: true })
       .eq("project_id", projectId)
       .gte("ts", since),
-    getProducts(),
-    getTrackingConfig(),
+    getProducts(projectId),
+    getTrackingConfig(projectId),
   ]);
 
   const [hottokSet, metaTokenSet, metaAccountSet] = await Promise.all([

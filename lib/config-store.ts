@@ -22,26 +22,27 @@ export interface TrackingConfig {
   retention_days: number;
 }
 
-/** Todos os produtos do registry: incluídos primeiro, depois por nome. */
-export async function getProducts(): Promise<ProductRow[]> {
+/** Produtos do registry DO PROJETO: incluídos primeiro, depois por nome. */
+export async function getProducts(projectId: number): Promise<ProductRow[]> {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from("products")
     .select("product_id, name, role, included")
+    .eq("project_id", projectId)
     .order("included", { ascending: false })
     .order("name", { ascending: true });
   if (error) throw new Error(`getProducts: ${error.message}`);
   return (data ?? []) as ProductRow[];
 }
 
-/** Linha única de configuração (id = 1). */
-export async function getTrackingConfig(): Promise<TrackingConfig> {
+/** Config de rastreio DO PROJETO (1 linha por projeto — uq_tracking_config_project). */
+export async function getTrackingConfig(projectId: number): Promise<TrackingConfig> {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from("tracking_config")
     .select("campaign_name_tags, retention_days")
-    .eq("id", 1)
-    .single();
+    .eq("project_id", projectId)
+    .maybeSingle();
   if (error) throw new Error(`getTrackingConfig: ${error.message}`);
   return {
     campaign_name_tags: data?.campaign_name_tags ?? [],
