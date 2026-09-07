@@ -4,7 +4,7 @@ export const maxDuration = 60; // sync pode levar alguns segundos
 export const preferredRegion = "gru1"; // perto do Supabase (sa-east-1)
 
 import { NextResponse } from "next/server";
-import { runMetaSync } from "@/lib/meta/sync";
+import { runMetaSyncAll } from "@/lib/meta/sync";
 
 /**
  * Dispara o sync do Meta. Protegido por SYNC_SECRET (cron e disparo manual).
@@ -24,9 +24,10 @@ async function handle(req: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
   try {
-    const result = await runMetaSync();
-    const status = result.ok || result.skipped ? 200 : 500;
-    return NextResponse.json(result, { status });
+    const results = await runMetaSyncAll();
+    // 200 se todos passaram ou foram pulados; 500 se algum falhou de verdade.
+    const anyHardFail = results.some((r) => !r.ok && !r.skipped);
+    return NextResponse.json({ ok: !anyHardFail, results }, { status: anyHardFail ? 500 : 200 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[sync] erro inesperado:", msg);
