@@ -23,6 +23,7 @@ export interface ParsedHotmart {
   // V2-1: produto + comprador (crus, server-only).
   productId: string | null; // data.product.id (Hotmart)
   productName: string | null; // data.product.name (Hotmart)
+  paymentType: string | null; // data.purchase.payment.type (ex.: CREDIT_CARD, PIX)
   buyerName: string | null;
   buyerDocument: string | null;
   buyerAddress: Record<string, unknown> | null;
@@ -86,6 +87,7 @@ export function parseHotmartPayload(body: unknown): ParsedHotmart {
   const tracking = obj(purchase.tracking);
   const price = obj(purchase.price);
   const fullPrice = obj(purchase.full_price);
+  const payment = obj(purchase.payment);
 
   const eventName = str(root.event);
   // status canônico: prioriza purchase.status; senão deriva do nome do evento.
@@ -155,6 +157,7 @@ export function parseHotmartPayload(body: unknown): ParsedHotmart {
     contactPhone: str(buyer.checkout_phone) || str(buyer.phone),
     productId: idStr(product.id),
     productName: str(product.name),
+    paymentType: str(payment.type),
     buyerName: str(buyer.name),
     buyerDocument: str(buyer.document) || str(buyer.doc),
     buyerAddress: Object.keys(buyerAddr).length > 0 ? buyerAddr : null,

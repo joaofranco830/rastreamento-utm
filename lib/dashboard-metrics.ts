@@ -1,7 +1,7 @@
 /** Catálogo de métricas (cartões) do Dashboard do Perpétuo + base do Construtor
  *  de Métricas personalizadas. Fonte única compartilhada entre o Dashboard, o
  *  configurador de métricas e o construtor de fórmulas. */
-import type { CentralSummary, ProductBreakdown } from "./central";
+import type { CentralSummary, ProductBreakdown, PaymentBreakdown } from "./central";
 import { brl, inteiro, pct, mult } from "./format";
 
 // ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ export interface BlockDef {
 
 export const BLOCK_CATALOG: BlockDef[] = [
   { key: "revenue_by_role", label: "Faturamento por etapa" },
-  { key: "products", label: "Tabela de produtos" },
+  { key: "products", label: "Vendas por produto e pagamento" },
   { key: "funnel", label: "Métricas do funil" },
   { key: "timeseries", label: "Evolução diária" },
   { key: "refund", label: "Detalhes de reembolso" },
@@ -86,12 +86,36 @@ export const FIELD_GROUPS = [
   "Meta — Investimento & tráfego",
   "Meta — Vídeo",
   "Vendas (Hotmart)",
+  "Reembolso",
   "Faturamento por etapa",
   "Nº de vendas por etapa",
   "Por produto",
+  "Forma de pagamento",
   "Funil (rastreio)",
   "Derivados (prontos)",
 ] as const;
+
+/** Nomes amigáveis das formas de pagamento da Hotmart. */
+export const PAYMENT_LABELS: Record<string, string> = {
+  CREDIT_CARD: "Cartão de crédito",
+  PIX: "Pix",
+  APPLE_PAY: "Apple Pay",
+  GOOGLE_PAY: "Google Pay",
+  BILLET: "Boleto",
+  PAYPAL: "PayPal",
+  DEBIT_CARD: "Cartão de débito",
+  HYBRID: "Híbrido",
+  HOTCARD: "Hotcard",
+  DIRECT_DEBIT: "Débito direto",
+  WALLET: "Carteira",
+  SAMSUNG_PAY: "Samsung Pay",
+  PICPAY: "PicPay",
+  OUTROS: "Outros",
+};
+
+export function paymentLabel(type: string): string {
+  return PAYMENT_LABELS[type] ?? type;
+}
 
 export const FIELD_CATALOG: FieldDef[] = [
   // Meta — investimento & tráfego
@@ -120,7 +144,16 @@ export const FIELD_CATALOG: FieldDef[] = [
   { key: "net_sales", label: "Nº de vendas (total)", group: "Vendas (Hotmart)", format: "number" },
   { key: "net_sales_principal", label: "Nº de vendas (principal)", group: "Vendas (Hotmart)", format: "number" },
   { key: "paid_count", label: "Pedidos pagos", group: "Vendas (Hotmart)", format: "number" },
-  { key: "reverted_count", label: "Pedidos revertidos", group: "Vendas (Hotmart)", format: "number" },
+
+  // Reembolso
+  { key: "refunded_count", label: "Compras reembolsadas", group: "Reembolso", format: "number" },
+  { key: "refunded_value", label: "Valor reembolsado", group: "Reembolso", format: "money" },
+  { key: "chargeback_count", label: "Compras com chargeback", group: "Reembolso", format: "number" },
+  { key: "chargeback_value", label: "Valor de chargeback", group: "Reembolso", format: "money" },
+  { key: "canceled_count", label: "Compras canceladas", group: "Reembolso", format: "number" },
+  { key: "canceled_value", label: "Valor cancelado", group: "Reembolso", format: "money" },
+  { key: "refunds_total_count", label: "Total de reembolsos (compras)", group: "Reembolso", format: "number" },
+  { key: "refunds_total_value", label: "Total estornado (valor)", group: "Reembolso", format: "money" },
 
   // Faturamento por etapa (papel)
   { key: "role_rev_principal", label: "Faturamento — Principal", group: "Faturamento por etapa", format: "money" },
@@ -168,9 +201,26 @@ export function productFields(byProduct: ProductBreakdown[] | null | undefined):
   return out;
 }
 
-/** Catálogo completo para o construtor: fixos + dinâmicos (produtos do projeto). */
-export function allFields(byProduct: ProductBreakdown[] | null | undefined): FieldDef[] {
-  return [...FIELD_CATALOG, ...productFields(byProduct)];
+/** Campos DINÂMICOS por forma de pagamento: faturamento + nº de vendas. */
+export function paymentFields(byPayment: PaymentBreakdown[] | null | undefined): FieldDef[] {
+  const out: FieldDef[] = [];
+  for (const p of byPayment ?? []) {
+    if (!p.type) continue;
+    const nome = paymentLabel(p.type);
+    out.push(
+      { key: `pay_rev_${p.type}`, label: `Faturamento — ${nome}`, group: "Forma de pagamento", format: "money" },
+      { key: `pay_sales_${p.type}`, label: `Nº de vendas — ${nome}`, group: "Forma de pagamento", format: "number" },
+    );
+  }
+  return out;
+}
+
+/** Catálogo completo para o construtor: fixos + dinâmicos (produtos + pagamento do projeto). */
+export function allFields(
+  byProduct: ProductBreakdown[] | null | undefined,
+  byPayment?: PaymentBreakdown[] | null | undefined,
+): FieldDef[] {
+  return [...FIELD_CATALOG, ...productFields(byProduct), ...paymentFields(byPayment)];
 }
 
 /** Resolve o valor numérico de um campo a partir do summary. null = sem dado. */
@@ -211,6 +261,15 @@ export function resolveField(s: CentralSummary, key: string): number | null {
     case "to_checkout": return s.funnel.to_checkout;
     case "checkout_conv": return s.funnel.checkout_conv;
     case "funnel_conv": return s.funnel.funnel_conv;
+    // reembolso (quebra por status)
+    case "refunded_count": return s.refunds.refunded.count;
+    case "refunded_value": return s.refunds.refunded.value;
+    case "chargeback_count": return s.refunds.chargeback.count;
+    case "chargeback_value": return s.refunds.chargeback.value;
+    case "canceled_count": return s.refunds.canceled.count;
+    case "canceled_value": return s.refunds.canceled.value;
+    case "refunds_total_count": return s.refunds.refunded.count + s.refunds.chargeback.count + s.refunds.canceled.count;
+    case "refunds_total_value": return s.refunded;
   }
   if (key.startsWith("role_rev_")) return s.revenue_by_role[key.slice(9)] ?? 0;
   if (key.startsWith("role_sales_")) return s.sales_by_role[key.slice(11)] ?? 0;
@@ -221,6 +280,14 @@ export function resolveField(s: CentralSummary, key: string): number | null {
   if (key.startsWith("prod_sales_")) {
     const pid = key.slice(11);
     return s.by_product.find((p) => p.product_id === pid)?.net_sales ?? 0;
+  }
+  if (key.startsWith("pay_rev_")) {
+    const t = key.slice(8);
+    return s.by_payment.find((p) => p.type === t)?.net_revenue ?? 0;
+  }
+  if (key.startsWith("pay_sales_")) {
+    const t = key.slice(10);
+    return s.by_payment.find((p) => p.type === t)?.net_sales ?? 0;
   }
   return null;
 }

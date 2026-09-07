@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef, useState } from "react";
+import { brl, mult } from "@/lib/format";
+
 interface Point {
   day: string;
   invested: number;
@@ -21,7 +24,17 @@ function brlShort(n: number): string {
   return n.toFixed(0);
 }
 
+const SERIES = [
+  { key: "invested" as const, color: "#a1a1aa", label: "Gasto", money: true },
+  { key: "net_revenue" as const, color: "#22c55e", label: "Faturamento", money: true },
+  { key: "profit" as const, color: "#3b82f6", label: "Lucro", money: true },
+  { key: "roas" as const, color: "#f59e0b", label: "ROAS", money: false },
+];
+
 export default function TimeseriesChart({ data }: { data: Point[] }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState<number | null>(null);
+
   if (!data.length) return <p className="text-sm text-zinc-500">Sem dados no período.</p>;
 
   const n = data.length;
@@ -35,6 +48,7 @@ export default function TimeseriesChart({ data }: { data: Point[] }) {
   const x = (i: number) => PADL + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
   const y = (v: number) => PADT + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
   const yR = (v: number) => PADT + plotH - (v / rMax) * plotH;
+  const scaleOf = (key: keyof Point) => (key === "roas" ? yR : y);
 
   const path = (key: keyof Point, scale: (v: number) => number) =>
     data
@@ -45,12 +59,19 @@ export default function TimeseriesChart({ data }: { data: Point[] }) {
   const grid = Array.from({ length: ticks + 1 }, (_, i) => yMin + ((yMax - yMin) * i) / ticks);
   const step = Math.max(1, Math.ceil(n / 6));
 
-  const SERIES = [
-    { key: "invested" as const, color: "#a1a1aa", label: "Gasto", scale: y },
-    { key: "net_revenue" as const, color: "#22c55e", label: "Faturamento", scale: y },
-    { key: "profit" as const, color: "#3b82f6", label: "Lucro", scale: y },
-    { key: "roas" as const, color: "#f59e0b", label: "ROAS (×, eixo dir.)", scale: yR },
-  ];
+  // Converte a posição do mouse (px reais) no índice do ponto mais próximo.
+  function onMove(e: React.MouseEvent) {
+    const el = wrapRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const fx = (e.clientX - rect.left) / rect.width; // 0..1 sobre a largura do svg
+    const frac = (fx * W - PADL) / plotW;
+    const idx = Math.max(0, Math.min(n - 1, Math.round(frac * (n - 1))));
+    setHover(idx);
+  }
+
+  const hp = hover != null ? data[hover] : null;
+  const hxPct = hover != null ? (x(hover) / W) * 100 : 0;
 
   return (
     <div className="w-full overflow-x-auto">
@@ -62,42 +83,82 @@ export default function TimeseriesChart({ data }: { data: Point[] }) {
           </span>
         ))}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full text-zinc-500" style={{ minWidth: 600 }}>
-        {grid.map((g, i) => (
-          <g key={i}>
-            <line x1={PADL} x2={W - PADR} y1={y(g)} y2={y(g)} stroke="currentColor" strokeOpacity="0.1" />
-            <text x={PADL - 6} y={y(g) + 3} textAnchor="end" fontSize="10" fill="currentColor" fillOpacity="0.6">
-              {brlShort(g)}
+
+      <div
+        ref={wrapRef}
+        className="relative"
+        style={{ minWidth: 600 }}
+        onMouseMove={onMove}
+        onMouseLeave={() => setHover(null)}
+      >
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full text-zinc-500">
+          {grid.map((g, i) => (
+            <g key={i}>
+              <line x1={PADL} x2={W - PADR} y1={y(g)} y2={y(g)} stroke="currentColor" strokeOpacity="0.1" />
+              <text x={PADL - 6} y={y(g) + 3} textAnchor="end" fontSize="10" fill="currentColor" fillOpacity="0.6">
+                {brlShort(g)}
+              </text>
+            </g>
+          ))}
+          {[0, rMax / 2, rMax].map((r, i) => (
+            <text key={i} x={W - PADR + 6} y={yR(r) + 3} textAnchor="start" fontSize="10" fill="#f59e0b">
+              {r.toFixed(1)}×
             </text>
-          </g>
-        ))}
-        {[0, rMax / 2, rMax].map((r, i) => (
-          <text key={i} x={W - PADR + 6} y={yR(r) + 3} textAnchor="start" fontSize="10" fill="#f59e0b">
-            {r.toFixed(1)}×
-          </text>
-        ))}
-        {yMin < 0 && (
-          <line x1={PADL} x2={W - PADR} y1={y(0)} y2={y(0)} stroke="currentColor" strokeOpacity="0.3" strokeDasharray="3 3" />
+          ))}
+          {yMin < 0 && (
+            <line x1={PADL} x2={W - PADR} y1={y(0)} y2={y(0)} stroke="currentColor" strokeOpacity="0.3" strokeDasharray="3 3" />
+          )}
+          {SERIES.map((s) => (
+            <path
+              key={s.key}
+              d={path(s.key, scaleOf(s.key))}
+              fill="none"
+              stroke={s.color}
+              strokeWidth="2"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          ))}
+          {/* guia vertical + pontos no índice sob o cursor */}
+          {hover != null && (
+            <g>
+              <line x1={x(hover)} x2={x(hover)} y1={PADT} y2={PADT + plotH} stroke="currentColor" strokeOpacity="0.35" strokeWidth="1" />
+              {SERIES.map((s) => {
+                const v = Number(data[hover][s.key]) || 0;
+                return <circle key={s.key} cx={x(hover)} cy={scaleOf(s.key)(v)} r="3.5" fill={s.color} stroke="#0e0e14" strokeWidth="1.5" />;
+              })}
+            </g>
+          )}
+          {data.map((d, i) =>
+            i % step === 0 || i === n - 1 ? (
+              <text key={i} x={x(i)} y={H - PADB + 16} textAnchor="middle" fontSize="10" fill="currentColor" fillOpacity="0.6">
+                {d.day.slice(5)}
+              </text>
+            ) : null,
+          )}
+        </svg>
+
+        {/* tooltip (HTML sobreposto) */}
+        {hp && (
+          <div
+            className="pointer-events-none absolute top-1 z-10 -translate-x-1/2 rounded-lg border border-white/[.15] bg-[var(--noite-2)] px-3 py-2 text-xs shadow-xl"
+            style={{ left: `min(max(${hxPct}%, 70px), calc(100% - 70px))` }}
+          >
+            <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-aco">{hp.day}</p>
+            {SERIES.map((s) => (
+              <p key={s.key} className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1.5 text-zinc-300">
+                  <span className="inline-block h-2 w-2 rounded-sm" style={{ background: s.color }} />
+                  {s.label}
+                </span>
+                <span className="font-display text-foreground">
+                  {s.money ? brl(Number(hp[s.key]) || 0) : hp.roas == null ? "—" : mult(hp.roas)}
+                </span>
+              </p>
+            ))}
+          </div>
         )}
-        {SERIES.map((s) => (
-          <path
-            key={s.key}
-            d={path(s.key, s.scale)}
-            fill="none"
-            stroke={s.color}
-            strokeWidth="2"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-        ))}
-        {data.map((d, i) =>
-          i % step === 0 || i === n - 1 ? (
-            <text key={i} x={x(i)} y={H - PADB + 16} textAnchor="middle" fontSize="10" fill="currentColor" fillOpacity="0.6">
-              {d.day.slice(5)}
-            </text>
-          ) : null,
-        )}
-      </svg>
+      </div>
     </div>
   );
 }

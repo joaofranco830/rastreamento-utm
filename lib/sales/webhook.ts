@@ -97,6 +97,7 @@ export async function handleHotmartWebhook(
     try {
       const buyerPatch: Record<string, unknown> = {};
       if (parsed.productId) buyerPatch.product_id = parsed.productId;
+      if (parsed.paymentType) buyerPatch.payment_type = parsed.paymentType;
       if (parsed.contactEmail) buyerPatch.buyer_email = parsed.contactEmail;
       if (parsed.buyerName) buyerPatch.buyer_name = parsed.buyerName;
       if (parsed.contactPhone) buyerPatch.buyer_phone = parsed.contactPhone;

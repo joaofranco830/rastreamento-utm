@@ -7,7 +7,7 @@ import { brl, inteiro, pct, mult } from "@/lib/format";
 import TimeseriesChart from "../../central/timeseries-chart";
 import DateButton from "./date-button";
 import MetricsConfig from "./metrics-config";
-import ProductTable from "./product-table";
+import SalesTables from "./sales-tables";
 import {
   METRIC_CATALOG,
   allFields,
@@ -87,7 +87,7 @@ export default async function DashboardPage({
   }
 
   // Catálogo de dados + valores atuais (para o construtor de fórmulas mostrar prévia).
-  const fields = allFields(s.by_product);
+  const fields = allFields(s.by_product, s.by_payment);
   const values: Record<string, number | null> = {};
   for (const f of fields) values[f.key] = resolveField(s, f.key);
 
@@ -98,6 +98,10 @@ export default async function DashboardPage({
       ? cfg.cards.filter((k) => known.has(k))
       : METRIC_CATALOG.map((m) => m.key);
   const visibleCards = order.map((key) => ({ key, node: nodeOf[key] })).filter((c) => c.node);
+
+  // Reembolso por produto (só produtos com algum estorno no período).
+  const refundRows = s.by_product.filter((p) => p.refund_count > 0 || p.refunded_value > 0);
+  const totalRefunded = s.refunded;
 
   // Blocos de conteúdo (abaixo dos cards) — renderizados na ORDEM salva.
   const blockOf: Record<string, React.ReactNode> = {
@@ -121,19 +125,32 @@ export default async function DashboardPage({
     ),
     products: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Produtos</h2>
-        <ProductTable rows={s.by_product} />
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Vendas por produto e pagamento</h2>
+        <SalesTables products={s.by_product} payments={s.by_payment} />
       </section>
     ),
     funnel: (
       <section className="mb-8">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Funil</h2>
         <div className="flex flex-wrap gap-3">
-          <FunnelStep label="Connect rate" value={pct(s.funnel.connect_rate)} hint={`${inteiro(s.pageviews)} PVs / ${inteiro(s.meta.link_clicks)} cliques`} />
-          <FunnelStep label="Ida ao checkout" value={pct(s.funnel.to_checkout)} hint={`${inteiro(s.checkouts)} checkouts`} />
+          <FunnelStep
+            label="Connect rate"
+            value={pct(s.funnel.connect_rate)}
+            hint={`${inteiro(s.pageviews)} PVs${s.pageviews_source === "meta" ? " (Meta)" : ""} / ${inteiro(s.meta.link_clicks)} cliques`}
+          />
+          <FunnelStep
+            label="Ida ao checkout"
+            value={pct(s.funnel.to_checkout)}
+            hint={`${inteiro(s.checkouts)} checkouts${s.checkouts_source === "meta" ? " (Meta)" : ""}`}
+          />
           <FunnelStep label="Conv. checkout" value={pct(s.funnel.checkout_conv)} />
           <FunnelStep label="Conv. funil" value={pct(s.funnel.funnel_conv)} />
         </div>
+        {(s.pageviews_source === "meta" || s.checkouts_source === "meta") && (
+          <p className="mt-2 text-[11px] text-zinc-500">
+            Sem dados do nosso pixel no período — page views/checkouts vindos do Meta (LPV / checkout iniciado).
+          </p>
+        )}
       </section>
     ),
     timeseries: (
@@ -146,13 +163,41 @@ export default async function DashboardPage({
     ),
     refund: (
       <section className="mb-4">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Reembolso</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Card label="Pedidos revertidos" value={inteiro(s.reverted_count)} sub={`de ${inteiro(s.paid_count)} pagos`} />
-          <Card label="Valor estornado" value={brl(s.refunded)} />
-          <Card label="Taxa (pedidos)" value={pct(s.refund_rate_count)} />
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Reembolsos</h2>
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <Card label="Compras reembolsadas" value={inteiro(s.refunds.refunded.count)} sub={brl(s.refunds.refunded.value)} />
+          <Card label="Compras com chargeback" value={inteiro(s.refunds.chargeback.count)} sub={brl(s.refunds.chargeback.value)} />
+          <Card label="Compras canceladas" value={inteiro(s.refunds.canceled.count)} sub={brl(s.refunds.canceled.value)} />
+          <Card label="Total estornado" value={brl(s.refunded)} sub={`de ${inteiro(s.paid_count)} pagos`} />
+          <Card label="Taxa (compras)" value={pct(s.refund_rate_count)} />
           <Card label="Taxa (valor)" value={pct(s.refund_rate_value)} />
         </div>
+        {refundRows.length > 0 && (
+          <div className="overflow-x-auto rounded-xl border border-white/[.1] bg-[var(--noite-2)]">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left font-mono text-[10px] uppercase tracking-wider text-aco">
+                  <th className="px-3 py-2 font-normal">Produto</th>
+                  <th className="px-3 py-2 text-right font-normal">Reembolsos</th>
+                  <th className="px-3 py-2 text-right font-normal">% da etapa</th>
+                  <th className="px-3 py-2 text-right font-normal">Valor estornado</th>
+                  <th className="px-3 py-2 text-right font-normal">% do estorno</th>
+                </tr>
+              </thead>
+              <tbody>
+                {refundRows.map((r) => (
+                  <tr key={r.product_id} className="border-t border-white/[.06]">
+                    <td className="px-3 py-2 text-foreground">{r.name}</td>
+                    <td className="px-3 py-2 text-right text-foreground">{inteiro(r.refund_count)}</td>
+                    <td className="px-3 py-2 text-right text-zinc-400">{pct(r.paid > 0 ? r.refund_count / r.paid : 0)}</td>
+                    <td className="px-3 py-2 text-right font-display text-foreground">{brl(r.refunded_value)}</td>
+                    <td className="px-3 py-2 text-right text-zinc-400">{pct(totalRefunded > 0 ? r.refunded_value / totalRefunded : 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
     ),
   };

@@ -13,6 +13,26 @@ export interface ProductBreakdown {
   role: string;
   net_revenue: number;
   net_sales: number;
+  paid: number;
+  refund_count: number;
+  refunded_value: number;
+}
+
+export interface PaymentBreakdown {
+  type: string;
+  net_revenue: number;
+  net_sales: number;
+}
+
+export interface RefundBucket {
+  count: number;
+  value: number;
+}
+
+export interface RefundBreakdown {
+  refunded: RefundBucket;
+  chargeback: RefundBucket;
+  canceled: RefundBucket;
 }
 
 export interface CentralSummary {
@@ -35,8 +55,12 @@ export interface CentralSummary {
   revenue_by_role: Record<string, number>;
   sales_by_role: Record<string, number>;
   by_product: ProductBreakdown[];
+  by_payment: PaymentBreakdown[];
+  refunds: RefundBreakdown;
   pageviews: number;
   checkouts: number;
+  pageviews_source: "pixel" | "meta";
+  checkouts_source: "pixel" | "meta";
   meta: {
     impressions: number;
     clicks: number;
