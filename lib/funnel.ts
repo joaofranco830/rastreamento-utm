@@ -27,6 +27,10 @@ export interface DashboardConfig {
   custom_metrics?: CustomMetric[];
   /** Blocos de conteúdo abaixo dos cards, JÁ na ordem em que aparecem. */
   blocks?: string[];
+  /** Colunas da Tela Campanhas (estilo gerenciador), na ordem em que aparecem. */
+  campaign_columns?: string[];
+  /** Pré-definições de colunas da Tela Campanhas. */
+  campaign_presets?: { name: string; cols: string[] }[];
 }
 
 export interface FunnelRow {

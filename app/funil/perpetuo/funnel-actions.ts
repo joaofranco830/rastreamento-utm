@@ -92,6 +92,37 @@ function sanitizeCustomMetrics(list: CustomMetric[] | undefined): CustomMetric[]
   return out.slice(0, 50); // teto de segurança
 }
 
+/** Salva as colunas (e pré-definições) da Tela Campanhas deste funil. */
+export async function saveCampaignColumnsAction(input: {
+  cols: string[];
+  presets: { name: string; cols: string[] }[];
+}): Promise<{ ok: boolean; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin", "funcionario"]);
+  } catch {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const funnel = await getPerpetuoFunnel(projectId);
+  if (!funnel) return { ok: false, error: "Funil não encontrado." };
+
+  const presets = (input.presets ?? [])
+    .map((p) => ({ name: String(p.name ?? "").trim().slice(0, 60), cols: (p.cols ?? []).map(String) }))
+    .filter((p) => p.name.length > 0);
+
+  const admin = getSupabaseAdmin();
+  const dashboard_config = {
+    ...(funnel.dashboard_config ?? {}),
+    campaign_columns: (input.cols ?? []).map(String),
+    campaign_presets: presets,
+  };
+  const { error } = await admin.from("funnels").update({ dashboard_config }).eq("id", funnel.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/funil/perpetuo/campanhas");
+  return { ok: true };
+}
+
 /** Salva quais contas de anúncio ESTE funil mostra no dashboard (vazio = todas). */
 export async function saveDashboardAccountsAction(accountIds: string[]): Promise<{ ok: boolean; error?: string }> {
   const projectId = await getActiveProjectId();
