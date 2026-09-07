@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getActiveProjectId, getVisibleProjects } from "@/lib/tenant";
 import { getProjectCredential } from "@/lib/credentials";
-import Shell from "../../shell";
 import { MetaWizard } from "./wizard";
 import { DisconnectMeta } from "./disconnect";
 import { ManageAccounts } from "./manage-accounts";
@@ -28,22 +26,14 @@ export default async function MetaConnectPage() {
   const connected = !!(token && accountList.length > 0);
 
   return (
-    <Shell active="/configuracoes">
-      <div className="mx-auto w-full max-w-2xl">
-        <div className="mb-1 flex items-center gap-2 text-sm text-zinc-500">
-          <Link href="/configuracoes" className="hover:underline">
-            Configurar
-          </Link>
-          <span>/</span>
-          <span>Conectar Meta</span>
-        </div>
-        <h1 className="mb-1 text-xl font-semibold tracking-tight">Conectar Business Manager (Meta)</h1>
-        <p className="mb-6 text-sm text-zinc-500">
-          Ligue a BM que anuncia os produtos do projeto <strong>{projectName}</strong>. Passo a passo — vale para qualquer BM
-          nova depois.
-        </p>
+    <section>
+      <h2 className="mb-1 text-lg font-medium">Integração Meta (Business Manager)</h2>
+      <p className="mb-6 text-sm text-zinc-500">
+        Ligue a BM que anuncia os produtos do projeto <strong>{projectName}</strong>. Passo a passo — vale para qualquer BM
+        nova depois.
+      </p>
 
-        {connected ? (
+      {connected ? (
           <>
             <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-400/10 p-4">
               <div className="flex items-center justify-between gap-3">
@@ -77,10 +67,9 @@ export default async function MetaConnectPage() {
         )}
 
         <p className="mt-6 text-xs text-zinc-400">
-          🔒 O token fica <strong>cifrado</strong> no cofre do projeto (nunca no navegador nem em logs). Para só ajustar quais
-          contas de anúncio entram, use <strong>“Escolher contas de anúncio”</strong> — o token guardado é reaproveitado.
-        </p>
-      </div>
-    </Shell>
+        🔒 O token fica <strong>cifrado</strong> no cofre do projeto (nunca no navegador nem em logs). Para só ajustar quais
+        contas de anúncio entram, use <strong>“Escolher contas de anúncio”</strong> — o token guardado é reaproveitado.
+      </p>
+    </section>
   );
 }
