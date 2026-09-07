@@ -49,6 +49,7 @@ export const BLOCK_CATALOG: BlockDef[] = [
   { key: "revenue_by_role", label: "Faturamento por etapa" },
   { key: "products", label: "Vendas por produto e pagamento" },
   { key: "funnel", label: "Métricas do funil" },
+  { key: "ascension", label: "Ascensão" },
   { key: "timeseries", label: "Evolução diária" },
   { key: "refund", label: "Detalhes de reembolso" },
 ];
@@ -92,6 +93,7 @@ export const FIELD_GROUPS = [
   "Por produto",
   "Forma de pagamento",
   "Funil (rastreio)",
+  "Ascensão",
   "Derivados (prontos)",
 ] as const;
 
@@ -183,8 +185,14 @@ export const FIELD_CATALOG: FieldDef[] = [
   { key: "refund_rate_value", label: "Taxa de reembolso (valor)", group: "Derivados (prontos)", format: "percent", derived: true },
   { key: "connect_rate", label: "Connect rate", group: "Derivados (prontos)", format: "percent", derived: true },
   { key: "to_checkout", label: "Ida ao checkout", group: "Derivados (prontos)", format: "percent", derived: true },
-  { key: "checkout_conv", label: "Conversão do checkout", group: "Derivados (prontos)", format: "percent", derived: true },
-  { key: "funnel_conv", label: "Conversão do funil", group: "Derivados (prontos)", format: "percent", derived: true },
+  { key: "checkout_conv", label: "Conversão do checkout (front)", group: "Derivados (prontos)", format: "percent", derived: true },
+  { key: "funnel_conv", label: "Conversão do funil (front)", group: "Derivados (prontos)", format: "percent", derived: true },
+
+  // Ascensão (sempre sobre o nº de vendas do front)
+  { key: "ascension_rate", label: "Taxa de ascensão", group: "Ascensão", format: "percent", derived: true },
+  { key: "ascension_order_bump", label: "Taxa de compra — Order bump", group: "Ascensão", format: "percent", derived: true },
+  { key: "ascension_upsell", label: "Taxa de compra — Upsell", group: "Ascensão", format: "percent", derived: true },
+  { key: "ascension_downsell", label: "Taxa de compra — Downsell", group: "Ascensão", format: "percent", derived: true },
 ];
 
 /** Campos DINÂMICOS por projeto: faturamento + nº de vendas de cada PRODUTO. */
@@ -261,6 +269,16 @@ export function resolveField(s: CentralSummary, key: string): number | null {
     case "to_checkout": return s.funnel.to_checkout;
     case "checkout_conv": return s.funnel.checkout_conv;
     case "funnel_conv": return s.funnel.funnel_conv;
+    // ascensão (sempre sobre o nº de vendas do front = net_sales_principal)
+    case "ascension_rate": {
+      const front = s.net_sales_principal;
+      if (front <= 0) return null;
+      const asc = (s.sales_by_role.order_bump ?? 0) + (s.sales_by_role.upsell ?? 0) + (s.sales_by_role.downsell ?? 0);
+      return asc / front;
+    }
+    case "ascension_order_bump": return s.net_sales_principal > 0 ? (s.sales_by_role.order_bump ?? 0) / s.net_sales_principal : null;
+    case "ascension_upsell": return s.net_sales_principal > 0 ? (s.sales_by_role.upsell ?? 0) / s.net_sales_principal : null;
+    case "ascension_downsell": return s.net_sales_principal > 0 ? (s.sales_by_role.downsell ?? 0) / s.net_sales_principal : null;
     // reembolso (quebra por status)
     case "refunded_count": return s.refunds.refunded.count;
     case "refunded_value": return s.refunds.refunded.value;
