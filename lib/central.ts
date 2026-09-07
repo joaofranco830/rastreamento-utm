@@ -35,6 +35,16 @@ export interface RefundBreakdown {
   canceled: RefundBucket;
 }
 
+export interface LtvSummary {
+  unique_customers: number;
+  ticket: number | null;
+  repurchase_rate: number | null;
+  subscriptions: number;
+  new_subscriptions: number;
+  renewals: number;
+  renewal_rate: number | null;
+}
+
 export interface CentralSummary {
   period: { from: string; to: string };
   invested: number;
@@ -57,6 +67,7 @@ export interface CentralSummary {
   by_product: ProductBreakdown[];
   by_payment: PaymentBreakdown[];
   refunds: RefundBreakdown;
+  ltv: LtvSummary;
   pageviews: number;
   checkouts: number;
   pageviews_source: "pixel" | "meta";

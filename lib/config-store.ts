@@ -7,7 +7,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
  * que chamam isto já estão protegidas por login.
  */
 
-export const PRODUCT_ROLES = ["principal", "order_bump", "upsell", "downsell", "other"] as const;
+export const PRODUCT_ROLES = ["principal", "order_bump", "upsell", "downsell", "ascension", "other"] as const;
 export type ProductRole = (typeof PRODUCT_ROLES)[number];
 
 export interface ProductRow {

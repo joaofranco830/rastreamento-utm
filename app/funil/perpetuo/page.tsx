@@ -24,9 +24,10 @@ const ROLE_LABELS: Record<string, string> = {
   order_bump: "Order bump",
   upsell: "Upsell",
   downsell: "Downsell",
+  ascension: "Ascensão",
   other: "Outros",
 };
-const ROLE_ORDER = ["principal", "order_bump", "upsell", "downsell", "other"];
+const ROLE_ORDER = ["principal", "order_bump", "upsell", "downsell", "ascension", "other"];
 
 function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -103,18 +104,17 @@ export default async function DashboardPage({
   const refundRows = s.by_product.filter((p) => p.refund_count > 0 || p.refunded_value > 0);
   const totalRefunded = s.refunded;
 
-  // Ascensão: taxa de compra de bump/upsell/downsell sobre o nº de vendas do front.
+  // LTV: taxa de compra de bump/upsell/downsell/ascensão sobre o nº de vendas do front.
   const front = s.net_sales_principal;
   const ascRate = (v: number) => (front > 0 ? v / front : null);
   const ascRoles = [
     { role: "order_bump", label: "Order bump" },
     { role: "upsell", label: "Upsell" },
     { role: "downsell", label: "Downsell" },
+    { role: "ascension", label: "Ascensão" },
   ];
-  const ascTotalSales =
-    (s.sales_by_role.order_bump ?? 0) + (s.sales_by_role.upsell ?? 0) + (s.sales_by_role.downsell ?? 0);
   const ascProducts = s.by_product.filter(
-    (p) => ["order_bump", "upsell", "downsell"].includes(p.role) && p.net_sales > 0,
+    (p) => ["order_bump", "upsell", "downsell", "ascension"].includes(p.role) && p.net_sales > 0,
   );
 
   // Blocos de conteúdo (abaixo dos cards) — renderizados na ORDEM salva.
@@ -170,21 +170,33 @@ export default async function DashboardPage({
     ascension: (
       <section className="mb-8">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">
-          Ascensão <span className="text-zinc-600">· sobre {inteiro(front)} vendas do front</span>
+          LTV <span className="text-zinc-600">· {inteiro(s.ltv.unique_customers)} clientes únicos · {inteiro(front)} vendas do front</span>
         </h2>
-        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+
+        {/* LTV / recompra / assinaturas */}
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <div className="rounded-xl border border-lima/30 bg-[var(--noite-2)] p-4">
-            <p className="font-mono text-[11px] uppercase tracking-wider text-aco">Taxa de ascensão</p>
-            <p className="font-display mt-2 text-2xl text-lima">{pct(ascRate(ascTotalSales))}</p>
-            <p className="mt-1 text-xs text-zinc-400">{inteiro(ascTotalSales)} ofertas compradas</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-aco">Ticket médio (LTV)</p>
+            <p className="font-display mt-2 text-2xl text-lima">{brl(s.ltv.ticket ?? 0)}</p>
+            <p className="mt-1 text-xs text-zinc-400">por cliente único</p>
           </div>
+          <Card label="Clientes únicos" value={inteiro(s.ltv.unique_customers)} />
+          <Card label="Taxa de recompra" value={pct(s.ltv.repurchase_rate)} sub="compraram +1 produto" />
+          <Card label="Assinaturas" value={inteiro(s.ltv.subscriptions)} sub={`${inteiro(s.ltv.new_subscriptions)} novas`} />
+          <Card label="Renovações" value={inteiro(s.ltv.renewals)} />
+          <Card label="Taxa de renovação" value={pct(s.ltv.renewal_rate)} />
+        </div>
+
+        {/* taxas de compra sobre o front */}
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {ascRoles.map((r) => {
             const sales = s.sales_by_role[r.role] ?? 0;
             return (
-              <Card key={r.role} label={r.label} value={pct(ascRate(sales))} sub={`${inteiro(sales)} vendas`} />
+              <Card key={r.role} label={`Compra — ${r.label}`} value={pct(ascRate(sales))} sub={`${inteiro(sales)} vendas`} />
             );
           })}
         </div>
+
         {ascProducts.length > 0 && (
           <div className="overflow-x-auto rounded-xl border border-white/[.1] bg-[var(--noite-2)]">
             <table className="w-full text-sm">
