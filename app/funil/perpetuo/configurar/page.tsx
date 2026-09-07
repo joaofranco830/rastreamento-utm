@@ -1,31 +1,40 @@
-import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
-import { getPerpetuoFunnel } from "@/lib/funnel";
-import { createClient } from "@/lib/supabase/server";
-import ConfigForm from "./config-form";
+import { getProducts, getTrackingConfig } from "@/lib/config-store";
+import ProductsManager from "@/app/configuracoes/products-manager";
+import CampaignTagsForm from "@/app/configuracoes/campaign-tags-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfigurarFunilPage() {
   await requireUser();
   const projectId = await getActiveProjectId();
-  if (!projectId) redirect("/configuracoes");
+  if (!projectId) return null;
 
-  const supabase = await createClient();
-  const [funnel, { data: products }, { data: accounts }] = await Promise.all([
-    getPerpetuoFunnel(projectId),
-    supabase.from("products").select("product_id, name, role, included").eq("project_id", projectId).order("name"),
-    supabase.from("ad_accounts").select("id, meta_account_id").eq("project_id", projectId),
-  ]);
+  const [products, config] = await Promise.all([getProducts(projectId), getTrackingConfig(projectId)]);
 
   return (
-    <div className="max-w-2xl">
-      <h2 className="mb-1 text-base font-medium">Configurar funil</h2>
-      <p className="mb-5 text-sm text-zinc-500">
-        Escopo de dados deste funil: conta de anúncio, campanhas, produtos, oferta e recorrência.
-      </p>
-      <ConfigForm products={products ?? []} accounts={accounts ?? []} sf={funnel?.source_filters ?? null} />
+    <div className="max-w-2xl space-y-10">
+      <div>
+        <h2 className="mb-1 text-base font-medium">Configurar funil</h2>
+        <p className="text-sm text-zinc-500">O que este funil considera: produtos e tag de campanha.</p>
+      </div>
+
+      {/* Produtos no dashboard */}
+      <section>
+        <h3 className="mb-1 text-sm font-medium">Produtos no dashboard</h3>
+        <p className="mb-4 text-sm text-zinc-500">
+          Marque os produtos que quer considerar e defina o papel de cada um. As mudanças salvam sozinhas.
+        </p>
+        <ProductsManager products={products} />
+      </section>
+
+      {/* Tag de campanha */}
+      <section>
+        <h3 className="mb-1 text-sm font-medium">Tag de campanha (filtro do investido)</h3>
+        <p className="mb-4 text-sm text-zinc-500">Define quais campanhas do Meta entram no &quot;investido&quot; / ROAS.</p>
+        <CampaignTagsForm initialTags={config.campaign_name_tags} />
+      </section>
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
-import Shell from "../../shell";
 import UtmTool from "./utm-tool";
 
 export const dynamic = "force-dynamic";
@@ -22,11 +21,5 @@ export default async function UtmPage() {
     supabase.from("project_pixels").select("pixel_key").eq("project_id", projectId).eq("active", true).maybeSingle(),
   ]);
 
-  return (
-    <Shell active="/configuracoes">
-      <div className="mx-auto w-full max-w-3xl">
-        <UtmTool savedSets={(sets ?? []) as never} pixelKey={pixel?.pixel_key ?? null} />
-      </div>
-    </Shell>
-  );
+  return <UtmTool savedSets={(sets ?? []) as never} pixelKey={pixel?.pixel_key ?? null} />;
 }
