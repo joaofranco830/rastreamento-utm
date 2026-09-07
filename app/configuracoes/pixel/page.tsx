@@ -3,7 +3,9 @@ import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
+import { getTrackingConfig } from "@/lib/config-store";
 import CopyField from "../copy-field";
+import RetentionForm from "../retention-form";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +31,14 @@ export default async function PixelTab() {
 
   const supabase = await createClient();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const [{ data: pixel }, evt] = await Promise.all([
+  const [{ data: pixel }, evt, config] = await Promise.all([
     supabase.from("project_pixels").select("pixel_key").eq("project_id", projectId).eq("active", true).maybeSingle(),
     supabase
       .from("tracking_events")
       .select("id", { count: "exact", head: true })
       .eq("project_id", projectId)
       .gte("ts", since),
+    getTrackingConfig(projectId),
   ]);
 
   const h = await headers();
@@ -62,6 +65,15 @@ export default async function PixelTab() {
       ) : (
         <p className="text-sm text-amber-600">Nenhum pixel ativo para este projeto.</p>
       )}
+
+      {/* Retenção de eventos brutos — tema de dados de navegação, mora aqui. */}
+      <div className="mt-10 border-t border-black/[.06] pt-6 dark:border-white/[.08]">
+        <h3 className="mb-1 text-sm font-medium">Retenção de eventos brutos</h3>
+        <p className="mb-3 text-xs text-zinc-500">
+          Faxina automática dos eventos de navegação antigos. Vendas e agregados diários nunca são apagados.
+        </p>
+        <RetentionForm initialDays={config.retention_days} />
+      </div>
     </section>
   );
 }
