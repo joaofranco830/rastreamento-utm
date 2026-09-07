@@ -30,8 +30,8 @@ export default function FunnelHeader() {
               href={`${t.href}${qs}`}
               className={`rounded-lg px-3 py-2 text-sm transition-colors ${
                 active
-                  ? "bg-foreground font-medium text-background"
-                  : "text-zinc-600 hover:bg-black/[.04] dark:text-zinc-300 dark:hover:bg-white/[.06]"
+                  ? "bg-eletrico font-medium text-white"
+                  : "text-zinc-400 hover:bg-white/[.06] hover:text-zinc-200"
               }`}
             >
               {t.label}
