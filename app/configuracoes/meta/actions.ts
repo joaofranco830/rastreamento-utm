@@ -55,7 +55,7 @@ export async function testMetaTokenAction(
  */
 export async function connectMetaAction(
   token: string,
-  accountId: string,
+  accountIds: string[],
 ): Promise<{ ok: boolean; synced?: boolean; error?: string }> {
   const projectId = await getActiveProjectId();
   if (!projectId) return { ok: false, error: "Sem projeto ativo." };
@@ -66,21 +66,24 @@ export async function connectMetaAction(
   }
 
   const tok = token.trim();
-  const acc = accountId.trim().replace(/^act_/, "");
+  const accs = Array.from(
+    new Set((accountIds ?? []).map((a) => a.trim().replace(/^act_/, "")).filter(Boolean)),
+  );
   if (!tok) return { ok: false, error: "Token ausente." };
-  if (!acc) return { ok: false, error: "Selecione uma conta de anúncio." };
+  if (accs.length === 0) return { ok: false, error: "Selecione ao menos uma conta de anúncio." };
 
   try {
     await setProjectCredential(projectId, "meta", "token", tok);
-    await setProjectCredential(projectId, "meta", "account_id", acc);
+    // várias contas ficam numa lista separada por vírgula no cofre.
+    await setProjectCredential(projectId, "meta", "account_id", accs.join(","));
   } catch {
     return { ok: false, error: "Falha ao cifrar/salvar (verifique a chave do cofre)." };
   }
 
-  // primeiro sync (best-effort): se falhar, a conexão está salva mesmo assim.
+  // primeiro sync mais fundo (90 dias) para trazer o histórico; best-effort.
   let synced = false;
   try {
-    const r = await runMetaSyncForProject(projectId);
+    const r = await runMetaSyncForProject(projectId, 90);
     synced = r.ok;
   } catch {
     synced = false;

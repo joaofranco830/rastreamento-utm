@@ -30,9 +30,13 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
   const [step, setStep] = useState<Step>(1);
   const [token, setToken] = useState("");
   const [accounts, setAccounts] = useState<AdAccountOption[]>([]);
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [done, setDone] = useState<null | { synced: boolean }>(null);
+
+  function toggle(id: string) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   function test() {
     setMsg(null);
@@ -43,7 +47,8 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
         return;
       }
       setAccounts(r.accounts);
-      setSelected(r.accounts[0]?.id ?? "");
+      // pré-seleciona todas — o usuário desmarca o que não quiser.
+      setSelected(r.accounts.map((a) => a.id));
       setStep(3);
     });
   }
@@ -77,7 +82,7 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
               setStep(1);
               setToken("");
               setAccounts([]);
-              setSelected("");
+              setSelected([]);
             }}
             className="rounded-lg border border-black/[.12] px-3 py-2 text-sm font-medium dark:border-white/[.18]"
           >
@@ -258,26 +263,35 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
       {/* STEP 3 — escolher conta + conectar */}
       {step === 3 && (
         <div>
-          <h3 className="text-base font-medium">3. Escolha a conta de anúncio</h3>
+          <h3 className="text-base font-medium">3. Escolha as contas de anúncio</h3>
           <p className="mt-1 text-sm text-zinc-500">
-            Token válido ✓ — encontrei {accounts.length} {accounts.length === 1 ? "conta" : "contas"}. Selecione a conta desta
-            BM que alimenta este projeto.
+            Token válido ✓ — encontrei {accounts.length} {accounts.length === 1 ? "conta" : "contas"}. Marque{" "}
+            <strong>todas</strong> as contas que anunciam os produtos deste projeto (pode ser mais de uma).
           </p>
+          {accounts.length > 1 && (
+            <div className="mt-2 flex gap-3 text-xs">
+              <button onClick={() => setSelected(accounts.map((a) => a.id))} className="text-zinc-500 hover:underline">
+                Marcar todas
+              </button>
+              <button onClick={() => setSelected([])} className="text-zinc-500 hover:underline">
+                Limpar
+              </button>
+            </div>
+          )}
           <div className="mt-3 flex flex-col gap-2">
             {accounts.map((a) => (
               <label
                 key={a.id}
                 className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm ${
-                  selected === a.id
+                  selected.includes(a.id)
                     ? "border-foreground bg-black/[.03] dark:bg-white/[.05]"
                     : "border-black/[.1] dark:border-white/[.14]"
                 }`}
               >
                 <input
-                  type="radio"
-                  name="adaccount"
-                  checked={selected === a.id}
-                  onChange={() => setSelected(a.id)}
+                  type="checkbox"
+                  checked={selected.includes(a.id)}
+                  onChange={() => toggle(a.id)}
                   className="accent-current"
                 />
                 <span className="min-w-0 flex-1">
@@ -294,10 +308,12 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
             </button>
             <button
               onClick={connect}
-              disabled={pending || !selected}
+              disabled={pending || selected.length === 0}
               className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50"
             >
-              {pending ? "Conectando…" : "Conectar BM"}
+              {pending
+                ? "Conectando…"
+                : `Conectar ${selected.length || ""} ${selected.length === 1 ? "conta" : "contas"}`.trim()}
             </button>
           </div>
         </div>

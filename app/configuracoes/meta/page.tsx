@@ -19,8 +19,12 @@ export default async function MetaConnectPage() {
 
   // status atual da conexão (server-only; lê o cofre).
   const token = await getProjectCredential(projectId, "meta", "token").catch(() => null);
-  const account = await getProjectCredential(projectId, "meta", "account_id").catch(() => null);
-  const connected = !!(token && account);
+  const accountRaw = await getProjectCredential(projectId, "meta", "account_id").catch(() => null);
+  const accountList = (accountRaw ?? "")
+    .split(",")
+    .map((s) => s.trim().replace(/^act_/, ""))
+    .filter(Boolean);
+  const connected = !!(token && accountList.length > 0);
 
   return (
     <Shell active="/configuracoes">
@@ -42,8 +46,12 @@ export default async function MetaConnectPage() {
           <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-400/10 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">BM conectada ✓</p>
-                <p className="mt-0.5 font-mono text-xs text-zinc-500">act_{account}</p>
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                  BM conectada ✓ — {accountList.length} {accountList.length === 1 ? "conta" : "contas"}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-zinc-500">
+                  {accountList.map((a) => `act_${a}`).join(", ")}
+                </p>
               </div>
               <DisconnectMeta />
             </div>

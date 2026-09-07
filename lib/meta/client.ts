@@ -13,7 +13,8 @@ export const META_ATTR_WINDOW = "7d_click";
 
 export interface MetaCreds {
   token: string;
-  account: string;
+  /** Uma ou mais contas de anúncio (ids sem prefixo obrigatório; normalizados no uso). */
+  accounts: string[];
 }
 
 export function normAccount(a: string): string {
@@ -25,7 +26,7 @@ export function normAccount(a: string): string {
 export function envMetaCreds(): MetaCreds | null {
   const t = process.env.META_ACCESS_TOKEN;
   const a = process.env.META_AD_ACCOUNT_ID;
-  return t && a ? { token: t, account: normAccount(a) } : null;
+  return t && a ? { token: t, accounts: [a] } : null;
 }
 
 /** Lista as contas de anúncio que o token enxerga (passo "testar conexão" do wizard). */
@@ -130,8 +131,8 @@ export interface MetaInsightRow {
   date_start: string;
 }
 
-/** Insights por anúncio, 1 linha por (anúncio, dia), na janela recente. */
-export async function fetchInsights(creds: MetaCreds, sinceDays = 14): Promise<MetaInsightRow[]> {
+/** Insights por anúncio de UMA conta, 1 linha por (anúncio, dia), na janela recente. */
+export async function fetchInsights(token: string, account: string, sinceDays = 14): Promise<MetaInsightRow[]> {
   const until = new Date();
   const since = new Date(until.getTime() - sinceDays * 86400000);
   const params = new URLSearchParams({
@@ -143,9 +144,9 @@ export async function fetchInsights(creds: MetaCreds, sinceDays = 14): Promise<M
     time_increment: "1",
     time_range: JSON.stringify({ since: ymd(since), until: ymd(until) }),
     limit: "500",
-    access_token: creds.token,
+    access_token: token,
   });
-  const data = await getAllPages(`${BASE}/${normAccount(creds.account)}/insights?${params.toString()}`);
+  const data = await getAllPages(`${BASE}/${normAccount(account)}/insights?${params.toString()}`);
   return data as unknown as MetaInsightRow[];
 }
 
@@ -154,15 +155,16 @@ export async function fetchInsights(creds: MetaCreds, sinceDays = 14): Promise<M
  * Endpoint separado: o status NÃO vem nos insights. Retorna Map<meta_id, status>.
  */
 export async function fetchEntityStatuses(
-  creds: MetaCreds,
+  token: string,
+  account: string,
   level: "campaigns" | "adsets" | "ads",
 ): Promise<Map<string, string>> {
   const params = new URLSearchParams({
     fields: "id,effective_status",
     limit: "500",
-    access_token: creds.token,
+    access_token: token,
   });
-  const data = await getAllPages(`${BASE}/${normAccount(creds.account)}/${level}?${params.toString()}`);
+  const data = await getAllPages(`${BASE}/${normAccount(account)}/${level}?${params.toString()}`);
   const m = new Map<string, string>();
   for (const r of data) {
     const id = r.id as string | undefined;
