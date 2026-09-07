@@ -1,5 +1,4 @@
 import Link from "next/link";
-import RefreshButton from "./refresh-button";
 import LogoutButton from "./logout-button";
 import ProjectSwitcher from "./project-switcher";
 import { getVisibleProjects, getActiveProjectId } from "@/lib/tenant";
@@ -126,12 +125,12 @@ export default async function Shell({
 
       {/* Conteúdo */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[.07] px-5 py-3 dark:border-white/[.08]">
-          <ProjectSwitcher projects={projects} active={activeProject} />
-          <div className="flex items-center gap-2">
-            <RefreshButton />
-            <LogoutButton />
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[.08] px-5 py-3">
+          <div className="flex items-center gap-2 text-sm text-aco">
+            <span className="font-mono text-[11px] uppercase tracking-wider">Projeto</span>
+            <ProjectSwitcher projects={projects} active={activeProject} />
           </div>
+          <LogoutButton />
         </header>
         <main className="min-w-0 flex-1 px-5 py-6">{children}</main>
       </div>

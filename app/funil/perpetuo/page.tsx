@@ -5,6 +5,7 @@ import { getPerpetuoFunnel } from "@/lib/funnel";
 import { getCentral, resolveRange } from "@/lib/central";
 import { brl, inteiro, pct, mult } from "@/lib/format";
 import TimeseriesChart from "../../central/timeseries-chart";
+import DateButton from "./date-button";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,12 @@ export default async function DashboardPage({
 
   return (
     <>
+      {/* Controles desta aba (período). */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg text-foreground">DASHBOARD GERAL</h2>
+        <DateButton />
+      </div>
+
       {visibleCards.length > 0 && (
         <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {visibleCards.map((c) => (
@@ -85,15 +92,15 @@ export default async function DashboardPage({
 
       {/* Faturamento por papel */}
       <section className="mb-8">
-        <h2 className="mb-3 text-sm font-medium text-zinc-500">Faturamento por papel</h2>
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Faturamento por papel</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {ROLE_ORDER.map((r) => {
             const v = s.revenue_by_role[r] ?? 0;
             const share = roleTotal > 0 ? v / roleTotal : 0;
             return (
-              <div key={r} className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-                <p className="text-xs text-zinc-500">{ROLE_LABELS[r]}</p>
-                <p className="mt-1 text-lg font-semibold tracking-tight">{brl(v)}</p>
+              <div key={r} className="rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4">
+                <p className="font-mono text-[11px] uppercase tracking-wider text-aco">{ROLE_LABELS[r]}</p>
+                <p className="font-display mt-2 text-lg text-foreground">{brl(v)}</p>
                 <p className="mt-0.5 text-xs text-zinc-400">{pct(share)}</p>
               </div>
             );
@@ -103,7 +110,7 @@ export default async function DashboardPage({
 
       {/* Funil */}
       <section className="mb-8">
-        <h2 className="mb-3 text-sm font-medium text-zinc-500">Funil</h2>
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Funil</h2>
         <div className="flex flex-wrap gap-3">
           <FunnelStep label="Connect rate" value={pct(s.funnel.connect_rate)} hint={`${inteiro(s.pageviews)} PVs / ${inteiro(s.meta.link_clicks)} cliques`} />
           <FunnelStep label="Ida ao checkout" value={pct(s.funnel.to_checkout)} hint={`${inteiro(s.checkouts)} checkouts`} />
@@ -114,15 +121,15 @@ export default async function DashboardPage({
 
       {/* Gráfico temporal */}
       <section className="mb-8">
-        <h2 className="mb-3 text-sm font-medium text-zinc-500">Evolução diária</h2>
-        <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Evolução diária</h2>
+        <div className="rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4">
           <TimeseriesChart data={d.series} />
         </div>
       </section>
 
       {/* Reembolso */}
       <section className="mb-4">
-        <h2 className="mb-3 text-sm font-medium text-zinc-500">Reembolso</h2>
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Reembolso</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Card label="Pedidos revertidos" value={inteiro(s.reverted_count)} sub={`de ${inteiro(s.paid_count)} pagos`} />
           <Card label="Valor estornado" value={brl(s.refunded)} />

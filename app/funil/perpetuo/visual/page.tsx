@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { getCentral, resolveRange } from "@/lib/central";
 import { inteiro, pct, brl } from "@/lib/format";
+import DateButton from "../date-button";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,10 @@ export default async function VisualPage({
 
   return (
     <div className="max-w-2xl">
-      <h2 className="mb-1 text-base font-medium">Funil (visual)</h2>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg text-foreground">FUNIL (VISUAL)</h2>
+        <DateButton />
+      </div>
       <p className="mb-6 text-sm text-zinc-500">
         Etapas do funil com as métricas do período. O rastreio é parcial — vendas vêm do webhook (completo).
       </p>
