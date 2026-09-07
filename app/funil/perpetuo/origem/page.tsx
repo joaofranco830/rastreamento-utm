@@ -6,6 +6,7 @@ import { resolveRange } from "@/lib/central";
 import { brl, inteiro, pct } from "@/lib/format";
 import CustomersTable from "../../../origem/customers-table";
 import { classLabel } from "../../../origem/labels";
+import DateButton from "../date-button";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,15 @@ export default async function OrigemPage({
 
   return (
     <>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg text-foreground">ORIGEM DAS VENDAS</h2>
+        <DateButton />
+      </div>
+
       <section className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-          <p className="text-xs text-zinc-500">Total de vendas</p>
-          <p className="mt-1 text-xl font-semibold">{inteiro(ov.total.sales)}</p>
+        <div className="rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-aco">Total de vendas</p>
+          <p className="font-display mt-2 text-xl text-foreground">{inteiro(ov.total.sales)}</p>
           <p className="mt-0.5 text-xs text-zinc-400">{brl(ov.total.net_revenue)}</p>
         </div>
         <div className="rounded-xl border border-emerald-300/40 bg-emerald-50/40 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">

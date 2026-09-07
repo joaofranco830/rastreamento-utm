@@ -5,6 +5,7 @@ import { resolveRange } from "@/lib/central";
 import { getCampaignsTable, getCreativesConsolidated } from "@/lib/campanhas";
 import CampaignsTree from "../../../campanhas/campaigns-tree";
 import { CREATIVE_COLS } from "../../../campanhas/columns";
+import DateButton from "../date-button";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,10 @@ export default async function CampanhasPage({
 
   return (
     <>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg text-foreground">CAMPANHAS</h2>
+        <DateButton />
+      </div>
       <p className="mb-4 text-sm text-zinc-500">
         Clique no <span className="font-mono">▸</span> da campanha para abrir os conjuntos e anúncios (várias ao mesmo tempo).
       </p>
