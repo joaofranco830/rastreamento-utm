@@ -48,7 +48,10 @@ export default async function DashboardPage({
 
   const sp = await searchParams;
   const { from, to } = resolveRange(sp);
-  const [d, funnel] = await Promise.all([getCentral(projectId, from, to), getPerpetuoFunnel(projectId)]);
+  // A seleção de contas fica no funil (Configurar funil). Precisamos dela antes de
+  // ler os números, então resolvemos o funil primeiro.
+  const funnel = await getPerpetuoFunnel(projectId);
+  const d = await getCentral(projectId, from, to, funnel?.source_filters?.ad_accounts ?? null);
   const s = d.summary;
   const roleTotal = ROLE_ORDER.reduce((acc, r) => acc + (s.revenue_by_role[r] ?? 0), 0);
 
