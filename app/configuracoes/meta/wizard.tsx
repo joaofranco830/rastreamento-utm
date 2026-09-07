@@ -110,64 +110,108 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
         <div>
           <h3 className="text-base font-medium">1. Gere o token na sua Business Manager</h3>
           <p className="mt-1 text-sm text-zinc-500">
-            Faça uma vez por BM (~5 min). O token é de um <strong>System User</strong> (usuário de sistema), não da sua conta
-            pessoal — assim ele não expira quando você troca a senha. São 4 partes; siga na ordem.
+            Faça uma vez por BM (~5 min). O token é de um <strong>usuário de sistema</strong> (System User), não da sua conta
+            pessoal — assim não expira quando você troca a senha. São 4 partes; siga na ordem. Os nomes dos menus mudam de
+            tempos em tempos; se o rótulo estiver um pouco diferente, procure o equivalente.
           </p>
 
           <p className="mt-4 text-sm font-medium">Parte A — Crie um aplicativo (App)</p>
           <p className="mt-0.5 text-xs text-zinc-500">
-            O token precisa estar “amarrado” a um app. Se você <strong>não</strong> tem um app ainda (o caso da maioria), crie
-            um — leva 1 minuto e ele só serve de “chave”, não precisa publicar nada.
+            O token precisa estar “amarrado” a um app. Quase ninguém tem um ainda — criar leva 1 min, é só uma “chave”, não
+            precisa publicar nem enviar para revisão.
           </p>
           <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
             <li>
-              Abra <strong>developers.facebook.com/apps</strong> → <strong>Criar aplicativo</strong>.
+              Abra <strong>developers.facebook.com/apps</strong> → botão <strong>Criar app</strong>.
             </li>
             <li>
-              Em “Casos de uso”, escolha <strong>Outro</strong> → tipo <strong>Empresa</strong> (Business). Dê um nome (ex.:{" "}
-              <em>Rastreamento UTM</em>) e, no campo <strong>Portfólio empresarial</strong>, selecione a sua BM.
+              Na tela <strong>“O que você quer que seu app faça?”</strong> (casos de uso), role até o fim e escolha{" "}
+              <strong>Outro</strong> → <strong>Avançar</strong>.
             </li>
             <li>
-              Clique em <strong>Criar aplicativo</strong> (pode pedir sua senha do Facebook). Pronto — não precisa configurar
-              produto nem enviar para revisão.
+              Em <strong>“Selecionar um tipo de app”</strong>, escolha <strong>Empresa</strong> → <strong>Avançar</strong>.
+            </li>
+            <li>
+              Dê um nome (ex.: <em>Rastreamento UTM</em>), confirme o e-mail e, em <strong>Portfólio empresarial</strong>,
+              selecione a sua BM (se não aparecer, pode deixar em branco). → <strong>Criar app</strong> (pode pedir sua senha).
+            </li>
+            <li>
+              Você cai no painel do app. Não precisa mexer em mais nada aqui — só confira que ele existe. (Se pedir, o{" "}
+              <strong>ID do app</strong> fica no topo/menu “Configurações → Básico”.)
             </li>
           </ol>
 
           <p className="mt-4 text-sm font-medium">Parte B — Crie o usuário de sistema</p>
           <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
             <li>
-              Abra <strong>business.facebook.com/settings</strong> → <strong>Usuários → Usuários do sistema</strong>.
+              Abra <strong>business.facebook.com/settings</strong> (Configurações do negócio). Não é a mesma tela do app — é o
+              painel da BM.
             </li>
             <li>
-              <strong>Adicionar</strong> → nome (ex.: <em>Rastreamento UTM</em>) → função <strong>Admin</strong> → criar.
+              No menu da esquerda, seção <strong>Usuários</strong> → <strong>Usuários do sistema</strong>. (Se não achar, use a
+              busca do menu por “sistema”.)
+            </li>
+            <li>
+              Botão <strong>Adicionar</strong> → dê um nome (ex.: <em>Rastreamento UTM</em>) → em <strong>Função</strong>{" "}
+              escolha <strong>Administrador do sistema</strong> → <strong>Criar usuário do sistema</strong>.
             </li>
           </ol>
 
-          <p className="mt-4 text-sm font-medium">Parte C — Dê acesso à conta de anúncio e ao app</p>
+          <p className="mt-4 text-sm font-medium">Parte C — Dê 2 acessos a esse usuário de sistema</p>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Clique no usuário que acabou de criar. Você vai <strong>adicionar ativos duas vezes</strong> — o app e a conta de
+            anúncio.
+          </p>
           <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
             <li>
-              No usuário criado, <strong>Adicionar ativos</strong> → <strong>Contas de anúncio</strong> → marque a conta desta
-              BM → permissão <strong>Ver desempenho</strong> (ou controle total) → salvar.
+              Clique em <strong>Adicionar ativos</strong> → aba <strong>Aplicativos</strong> → marque o app da Parte A → ligue{" "}
+              <strong>Controle total</strong> (chave “Gerenciar app”) → <strong>Atribuir ativos</strong>.
             </li>
             <li>
-              <strong>Adicionar ativos</strong> de novo → <strong>Aplicativos</strong> → marque o app que você criou na Parte A
-              → <strong>controle total</strong> → salvar.
+              De novo em <strong>Adicionar ativos</strong> → aba <strong>Contas de anúncio</strong> → marque a conta desta BM →
+              ligue pelo menos <strong>Ver desempenho</strong> (controle total também serve) → <strong>Atribuir ativos</strong>.
             </li>
           </ol>
 
           <p className="mt-4 text-sm font-medium">Parte D — Gere o token</p>
           <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
             <li>
-              Ainda no usuário de sistema, clique em <strong>Gerar novo token</strong> e selecione o <strong>app da Parte A</strong>.
+              Ainda no usuário de sistema, clique em <strong>Gerar novo token</strong>.
             </li>
             <li>
-              Marque as permissões <code>ads_read</code> e <code>read_insights</code>. Expiração: <strong>Nunca</strong> →
-              gerar.
+              Em <strong>App</strong>, selecione o app da Parte A. Em <strong>Validade do token</strong>, escolha{" "}
+              <strong>Nunca</strong>.
+            </li>
+            <li>
+              Na lista de permissões, marque <code>ads_read</code> e <code>read_insights</code> → <strong>Gerar token</strong>.
             </li>
             <li>
               Copie o token (começa com <code>EAA…</code>) — ele <strong>só aparece uma vez</strong>. Guarde e volte aqui.
             </li>
           </ol>
+
+          <details className="mt-4">
+            <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+              Travou em algum passo?
+            </summary>
+            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs text-zinc-500">
+              <li>
+                <strong>Não acho “Usuários do sistema”:</strong> confirme que está em <em>business.facebook.com/settings</em>{" "}
+                (painel da BM), não no painel do app. Só admin da BM enxerga essa área.
+              </li>
+              <li>
+                <strong>“Gerar novo token” não mostra meu app:</strong> falta a Parte C.1 (atribuir o app ao usuário de
+                sistema com controle total).
+              </li>
+              <li>
+                <strong>Depois o teste não acha a conta:</strong> falta a Parte C.2 (atribuir a conta de anúncio).
+              </li>
+              <li>
+                Não precisa de revisão do app nem verificação de negócio para ler os <em>seus próprios</em> dados — isso só é
+                exigido para acessar contas de terceiros via login.
+              </li>
+            </ul>
+          </details>
 
           <div className="mt-5 flex justify-end">
             <button
