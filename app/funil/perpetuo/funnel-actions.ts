@@ -6,7 +6,7 @@ import { getActiveProjectId } from "@/lib/tenant";
 import { getPerpetuoFunnel } from "@/lib/funnel";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-/** Salva a pré-definição de métricas visíveis no Dashboard (Configurar dashboard). */
+/** Salva só a ordem/seleção ativa de cartões, preservando as pré-definições. */
 export async function saveDashboardConfigAction(cards: string[]): Promise<{ ok: boolean; error?: string }> {
   const projectId = await getActiveProjectId();
   if (!projectId) return { ok: false, error: "Sem projeto ativo." };
@@ -18,7 +18,36 @@ export async function saveDashboardConfigAction(cards: string[]): Promise<{ ok: 
   const funnel = await getPerpetuoFunnel(projectId);
   if (!funnel) return { ok: false, error: "Funil não encontrado." };
   const admin = getSupabaseAdmin();
-  const { error } = await admin.from("funnels").update({ dashboard_config: { cards } }).eq("id", funnel.id);
+  const dashboard_config = { ...(funnel.dashboard_config ?? {}), cards };
+  const { error } = await admin.from("funnels").update({ dashboard_config }).eq("id", funnel.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/funil/perpetuo");
+  return { ok: true };
+}
+
+/** Salva a config completa do dashboard: cartões ativos (ordenados) + pré-definições. */
+export async function saveDashboardLayoutAction(input: {
+  cards: string[];
+  presets: { name: string; cards: string[] }[];
+}): Promise<{ ok: boolean; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin", "funcionario"]);
+  } catch {
+    return { ok: false, error: "Sem permissão." };
+  }
+  const funnel = await getPerpetuoFunnel(projectId);
+  if (!funnel) return { ok: false, error: "Funil não encontrado." };
+
+  // sanitiza: nomes de preset limpos, únicos; cards são strings.
+  const presets = (input.presets ?? [])
+    .map((p) => ({ name: String(p.name ?? "").trim().slice(0, 60), cards: (p.cards ?? []).map(String) }))
+    .filter((p) => p.name.length > 0);
+
+  const admin = getSupabaseAdmin();
+  const dashboard_config = { cards: (input.cards ?? []).map(String), presets };
+  const { error } = await admin.from("funnels").update({ dashboard_config }).eq("id", funnel.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/funil/perpetuo");
   return { ok: true };

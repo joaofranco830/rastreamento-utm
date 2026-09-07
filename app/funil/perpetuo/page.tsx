@@ -6,6 +6,8 @@ import { getCentral, resolveRange } from "@/lib/central";
 import { brl, inteiro, pct, mult } from "@/lib/format";
 import TimeseriesChart from "../../central/timeseries-chart";
 import DateButton from "./date-button";
+import MetricsConfig from "./metrics-config";
+import { orderedActiveMetrics } from "@/lib/dashboard-metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -56,30 +58,33 @@ export default async function DashboardPage({
   const s = d.summary;
   const roleTotal = ROLE_ORDER.reduce((acc, r) => acc + (s.revenue_by_role[r] ?? 0), 0);
 
-  // Pré-definição de métricas (Configurar dashboard). null = mostrar todas.
-  const enabled = funnel?.dashboard_config?.cards ?? null;
-  const show = (key: string) => enabled === null || enabled.includes(key);
-
-  const CARDS: { key: string; node: React.ReactNode }[] = [
-    { key: "invested", node: <Card label="Investido" value={brl(s.invested)} /> },
-    { key: "net_revenue", node: <Card label="Faturamento (líq.)" value={brl(s.net_revenue)} /> },
-    { key: "profit", node: <Card label="Lucro" value={brl(s.profit)} /> },
-    { key: "roas", node: <Card label="ROAS" value={mult(s.roas)} /> },
-    { key: "ticket_medio", node: <Card label="Ticket médio" value={brl(s.ticket_medio)} /> },
-    { key: "cac_total", node: <Card label="Custo/venda (total)" value={brl(s.cac_total)} /> },
-    { key: "cac_principal", node: <Card label="Custo/venda (principal)" value={brl(s.cac_principal)} /> },
-    { key: "refund_rate", node: <Card label="Taxa de reembolso" value={pct(s.refund_rate_count)} sub={`${pct(s.refund_rate_value)} do valor`} /> },
-    { key: "net_sales", node: <Card label="Nº vendas (total)" value={inteiro(s.net_sales)} /> },
-    { key: "net_sales_principal", node: <Card label="Nº vendas (principal)" value={inteiro(s.net_sales_principal)} /> },
-  ];
-  const visibleCards = CARDS.filter((c) => show(c.key));
+  // Métricas configuráveis (cartões) — renderiza na ORDEM salva.
+  const cfg = funnel?.dashboard_config ?? null;
+  const nodeOf: Record<string, React.ReactNode> = {
+    invested: <Card label="Investido" value={brl(s.invested)} />,
+    net_revenue: <Card label="Faturamento (líq.)" value={brl(s.net_revenue)} />,
+    profit: <Card label="Lucro" value={brl(s.profit)} />,
+    roas: <Card label="ROAS" value={mult(s.roas)} />,
+    ticket_medio: <Card label="Ticket médio" value={brl(s.ticket_medio)} />,
+    cac_total: <Card label="Custo/venda (total)" value={brl(s.cac_total)} />,
+    cac_principal: <Card label="Custo/venda (principal)" value={brl(s.cac_principal)} />,
+    refund_rate: <Card label="Taxa de reembolso" value={pct(s.refund_rate_count)} sub={`${pct(s.refund_rate_value)} do valor`} />,
+    net_sales: <Card label="Nº vendas (total)" value={inteiro(s.net_sales)} />,
+    net_sales_principal: <Card label="Nº vendas (principal)" value={inteiro(s.net_sales_principal)} />,
+  };
+  const visibleCards = orderedActiveMetrics(cfg?.cards ?? null)
+    .map((key) => ({ key, node: nodeOf[key] }))
+    .filter((c) => c.node);
 
   return (
     <>
-      {/* Controles desta aba (período). */}
+      {/* Controles desta aba: configurar métricas + período. */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-lg text-foreground">DASHBOARD GERAL</h2>
-        <DateButton />
+        <div className="flex flex-wrap items-center gap-2">
+          <MetricsConfig current={cfg?.cards ?? null} presets={cfg?.presets ?? []} />
+          <DateButton />
+        </div>
       </div>
 
       {visibleCards.length > 0 && (
