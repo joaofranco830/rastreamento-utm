@@ -9,6 +9,7 @@ const ROLE_OPTIONS: { value: ProductRow["role"]; label: string }[] = [
   { value: "order_bump", label: "Order bump" },
   { value: "upsell", label: "Upsell" },
   { value: "downsell", label: "Downsell" },
+  { value: "ascension", label: "Ascensão" },
   { value: "other", label: "Outro" },
 ];
 

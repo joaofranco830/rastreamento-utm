@@ -10,6 +10,7 @@ const ROLE_LABELS: Record<string, string> = {
   order_bump: "Order bump",
   upsell: "Upsell",
   downsell: "Downsell",
+  ascension: "Ascensão",
   other: "Outros",
 };
 
