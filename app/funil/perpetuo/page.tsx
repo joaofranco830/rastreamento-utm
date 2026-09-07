@@ -7,7 +7,13 @@ import { brl, inteiro, pct, mult } from "@/lib/format";
 import TimeseriesChart from "../../central/timeseries-chart";
 import DateButton from "./date-button";
 import MetricsConfig from "./metrics-config";
-import { orderedActiveMetrics } from "@/lib/dashboard-metrics";
+import {
+  METRIC_CATALOG,
+  allFields,
+  resolveField,
+  evalFormula,
+  formatValue,
+} from "@/lib/dashboard-metrics";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +66,7 @@ export default async function DashboardPage({
 
   // Métricas configuráveis (cartões) — renderiza na ORDEM salva.
   const cfg = funnel?.dashboard_config ?? null;
+  const customs = cfg?.custom_metrics ?? [];
   const nodeOf: Record<string, React.ReactNode> = {
     invested: <Card label="Investido" value={brl(s.invested)} />,
     net_revenue: <Card label="Faturamento (líq.)" value={brl(s.net_revenue)} />,
@@ -72,9 +79,23 @@ export default async function DashboardPage({
     net_sales: <Card label="Nº vendas (total)" value={inteiro(s.net_sales)} />,
     net_sales_principal: <Card label="Nº vendas (principal)" value={inteiro(s.net_sales_principal)} />,
   };
-  const visibleCards = orderedActiveMetrics(cfg?.cards ?? null)
-    .map((key) => ({ key, node: nodeOf[key] }))
-    .filter((c) => c.node);
+  // Cartões de métricas personalizadas (fórmulas) — computados a partir do summary.
+  for (const cm of customs) {
+    nodeOf[cm.id] = <Card label={cm.name} value={formatValue(evalFormula(cm.formula, s), cm.format)} />;
+  }
+
+  // Catálogo de dados + valores atuais (para o construtor de fórmulas mostrar prévia).
+  const fields = allFields(s.by_product);
+  const values: Record<string, number | null> = {};
+  for (const f of fields) values[f.key] = resolveField(s, f.key);
+
+  // Ordem efetiva: usa a config salva (aceita ids custom_*); sem config = catálogo base.
+  const known = new Set(Object.keys(nodeOf));
+  const order =
+    cfg?.cards && cfg.cards.length > 0
+      ? cfg.cards.filter((k) => known.has(k))
+      : METRIC_CATALOG.map((m) => m.key);
+  const visibleCards = order.map((key) => ({ key, node: nodeOf[key] })).filter((c) => c.node);
 
   return (
     <>
@@ -82,7 +103,13 @@ export default async function DashboardPage({
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-lg text-foreground">DASHBOARD GERAL</h2>
         <div className="flex flex-wrap items-center gap-2">
-          <MetricsConfig current={cfg?.cards ?? null} presets={cfg?.presets ?? []} />
+          <MetricsConfig
+            current={cfg?.cards ?? null}
+            presets={cfg?.presets ?? []}
+            customMetrics={customs}
+            fields={fields}
+            values={values}
+          />
           <DateButton />
         </div>
       </div>

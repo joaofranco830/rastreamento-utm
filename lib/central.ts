@@ -7,6 +7,14 @@ import { createClient } from "@/lib/supabase/server";
  * retorna dados de projeto autorizado — ADR-v3-4/11).
  */
 
+export interface ProductBreakdown {
+  product_id: string;
+  name: string;
+  role: string;
+  net_revenue: number;
+  net_sales: number;
+}
+
 export interface CentralSummary {
   period: { from: string; to: string };
   invested: number;
@@ -25,9 +33,27 @@ export interface CentralSummary {
   refund_rate_count: number;
   refund_rate_value: number;
   revenue_by_role: Record<string, number>;
+  sales_by_role: Record<string, number>;
+  by_product: ProductBreakdown[];
   pageviews: number;
   checkouts: number;
-  meta: { impressions: number; clicks: number; link_clicks: number };
+  meta: {
+    impressions: number;
+    clicks: number;
+    link_clicks: number;
+    lpv: number;
+    ic: number;
+    purchases: number;
+    leads: number;
+    follows: number;
+    video_3s: number;
+    video_plays: number;
+    video_p25: number;
+    video_p50: number;
+    video_p75: number;
+    video_p95: number;
+    video_p100: number;
+  };
   funnel: {
     connect_rate: number | null;
     to_checkout: number | null;

@@ -3,7 +3,13 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveDashboardLayoutAction } from "./funnel-actions";
-import { METRIC_CATALOG, METRIC_LABEL } from "@/lib/dashboard-metrics";
+import MetricFormulaBuilder from "./metric-formula-builder";
+import {
+  METRIC_CATALOG,
+  METRIC_LABEL,
+  type FieldDef,
+  type CustomMetric,
+} from "@/lib/dashboard-metrics";
 
 interface Preset {
   name: string;
@@ -15,25 +21,45 @@ interface Item {
 }
 
 /** Monta a lista ordenada: ativos (na ordem salva) primeiro, depois o resto desligado. */
-function buildItems(cards: string[] | null): Item[] {
-  const catalog = METRIC_CATALOG.map((m) => m.key);
-  const active = (cards ?? catalog).filter((k) => catalog.includes(k));
+function buildItems(cards: string[] | null, customIds: string[]): Item[] {
+  const base = METRIC_CATALOG.map((m) => m.key);
+  const catalog = [...base, ...customIds];
+  const active = (cards ?? base).filter((k) => catalog.includes(k));
   const rest = catalog.filter((k) => !active.includes(k));
-  return [...active.map((k) => ({ key: k, enabled: true })), ...rest.map((k) => ({ key: k, enabled: cards ? false : true }))];
+  return [
+    ...active.map((k) => ({ key: k, enabled: true })),
+    ...rest.map((k) => ({ key: k, enabled: cards ? false : true })),
+  ];
 }
 
-/** Botão + modal de "Configurar métricas": selecionar, reordenar (arrastar) e pré-definições. */
-export default function MetricsConfig({ current, presets: initialPresets }: { current: string[] | null; presets: Preset[] }) {
+/** Botão + modal de "Configurar métricas": selecionar, reordenar (arrastar), criar personalizadas e pré-definições. */
+export default function MetricsConfig({
+  current,
+  presets: initialPresets,
+  customMetrics: initialCustom,
+  fields,
+  values,
+}: {
+  current: string[] | null;
+  presets: Preset[];
+  customMetrics: CustomMetric[];
+  fields: FieldDef[];
+  values: Record<string, number | null>;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<Item[]>(() => buildItems(current));
+  const [customMetrics, setCustomMetrics] = useState<CustomMetric[]>(initialCustom);
+  const [items, setItems] = useState<Item[]>(() => buildItems(current, initialCustom.map((c) => c.id)));
   const [presets, setPresets] = useState<Preset[]>(initialPresets);
   const [presetName, setPresetName] = useState("Personalizado");
   const [q, setQ] = useState("");
   const [drag, setDrag] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [builder, setBuilder] = useState<{ initial: CustomMetric | null } | null>(null);
 
+  const labelOf = (key: string) => METRIC_LABEL[key] ?? customMetrics.find((c) => c.id === key)?.name ?? key;
+  const isCustom = (key: string) => key.startsWith("custom_");
   const enabledCount = items.filter((i) => i.enabled).length;
   const activeCards = () => items.filter((i) => i.enabled).map((i) => i.key);
 
@@ -41,8 +67,9 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
     const needle = q.trim().toLowerCase();
     return items
       .map((it, idx) => ({ it, idx }))
-      .filter(({ it }) => !needle || METRIC_LABEL[it.key].toLowerCase().includes(needle));
-  }, [items, q]);
+      .filter(({ it }) => !needle || labelOf(it.key).toLowerCase().includes(needle));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, customMetrics]);
 
   function toggle(key: string) {
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, enabled: !i.enabled } : i)));
@@ -62,7 +89,7 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
     setPresetName(name);
     if (name === "Personalizado") return;
     const p = presets.find((x) => x.name === name);
-    if (p) setItems(buildItems(p.cards));
+    if (p) setItems(buildItems(p.cards, customMetrics.map((c) => c.id)));
   }
 
   function savePreset() {
@@ -83,10 +110,25 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
     setPresetName("Personalizado");
   }
 
+  /** Salva (cria/edita) uma métrica personalizada vinda do construtor. */
+  function saveCustom(m: CustomMetric) {
+    setCustomMetrics((prev) => {
+      const exists = prev.some((c) => c.id === m.id);
+      return exists ? prev.map((c) => (c.id === m.id ? m : c)) : [...prev, m];
+    });
+    setItems((prev) => (prev.some((i) => i.key === m.id) ? prev : [...prev, { key: m.id, enabled: true }]));
+    setBuilder(null);
+  }
+
+  function deleteCustom(id: string) {
+    setCustomMetrics((prev) => prev.filter((c) => c.id !== id));
+    setItems((prev) => prev.filter((i) => i.key !== id));
+  }
+
   function apply() {
     setMsg(null);
     start(async () => {
-      const r = await saveDashboardLayoutAction({ cards: activeCards(), presets });
+      const r = await saveDashboardLayoutAction({ cards: activeCards(), presets, customMetrics });
       if (!r.ok) {
         setMsg(r.error ?? "Falha ao salvar.");
         return;
@@ -100,7 +142,8 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
     <>
       <button
         onClick={() => {
-          setItems(buildItems(current));
+          setCustomMetrics(initialCustom);
+          setItems(buildItems(current, initialCustom.map((c) => c.id)));
           setPresets(initialPresets);
           setMsg(null);
           setOpen(true);
@@ -111,23 +154,15 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
       </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 sm:items-center"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl border border-white/[.12] bg-[var(--noite-2)] p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 sm:items-center" onClick={() => setOpen(false)}>
+          <div className="w-full max-w-md rounded-2xl border border-white/[.12] bg-[var(--noite-2)] p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             {/* header */}
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h3 className="font-display text-lg text-foreground">CONFIGURAR MÉTRICAS</h3>
-                <p className="text-xs text-aco">Escolha, reordene (arraste) e salve pré-definições.</p>
+                <p className="text-xs text-aco">Escolha, reordene (arraste), crie personalizadas e salve pré-definições.</p>
               </div>
-              <button onClick={() => setOpen(false)} className="rounded-lg border border-white/[.14] px-2 py-1 text-sm text-zinc-400 hover:bg-white/[.06]">
-                ✕
-              </button>
+              <button onClick={() => setOpen(false)} className="rounded-lg border border-white/[.14] px-2 py-1 text-sm text-zinc-400 hover:bg-white/[.06]">✕</button>
             </div>
 
             {/* presets */}
@@ -139,9 +174,7 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
               >
                 <option value="Personalizado">Personalizado</option>
                 {presets.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.name}
-                  </option>
+                  <option key={p.name} value={p.name}>{p.name}</option>
                 ))}
               </select>
               <button
@@ -154,6 +187,14 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
               </button>
             </div>
 
+            {/* criar personalizada */}
+            <button
+              onClick={() => setBuilder({ initial: null })}
+              className="mb-3 w-full rounded-lg border border-dashed border-eletrico/50 px-3 py-2 text-sm font-medium text-eletrico-cl hover:bg-eletrico/10"
+            >
+              ＋ Criar métrica personalizada
+            </button>
+
             {/* search */}
             <input
               value={q}
@@ -165,12 +206,12 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
             <div className="mb-2 flex items-center justify-between">
               <span className="font-mono text-[11px] uppercase tracking-wider text-aco">Cards</span>
               <span className="rounded-full bg-eletrico/15 px-2 py-0.5 text-[11px] font-medium text-eletrico-cl">
-                {enabledCount}/{METRIC_CATALOG.length}
+                {enabledCount}/{items.length}
               </span>
             </div>
 
             {/* lista arrastável */}
-            <div className="max-h-[46vh] space-y-1.5 overflow-y-auto pr-1">
+            <div className="max-h-[42vh] space-y-1.5 overflow-y-auto pr-1">
               {shown.map(({ it, idx }) => (
                 <div
                   key={it.key}
@@ -181,13 +222,9 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
                     if (drag !== null) reorder(drag, idx);
                     setDrag(null);
                   }}
-                  className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${
-                    drag === idx ? "border-eletrico" : "border-white/[.1]"
-                  } bg-white/[.02]`}
+                  className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${drag === idx ? "border-eletrico" : "border-white/[.1]"} bg-white/[.02]`}
                 >
-                  <span className="cursor-grab select-none text-aco" title="Arraste para reordenar" aria-hidden>
-                    ⠿
-                  </span>
+                  <span className="cursor-grab select-none text-aco" title="Arraste para reordenar" aria-hidden>⠿</span>
                   <button
                     onClick={() => toggle(it.key)}
                     role="switch"
@@ -196,7 +233,28 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
                   >
                     <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${it.enabled ? "left-4" : "left-0.5"}`} />
                   </button>
-                  <span className="flex-1 text-sm">{METRIC_LABEL[it.key]}</span>
+                  <span className="flex-1 text-sm">
+                    {labelOf(it.key)}
+                    {isCustom(it.key) && <span className="ml-2 rounded bg-lima/15 px-1.5 py-0.5 text-[10px] font-medium text-lima">fórmula</span>}
+                  </span>
+                  {isCustom(it.key) && (
+                    <span className="flex gap-1">
+                      <button
+                        onClick={() => setBuilder({ initial: customMetrics.find((c) => c.id === it.key) ?? null })}
+                        title="Editar fórmula"
+                        className="rounded border border-white/[.14] px-1.5 py-0.5 text-xs text-zinc-300 hover:bg-white/[.06]"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        onClick={() => deleteCustom(it.key)}
+                        title="Excluir métrica"
+                        className="rounded border border-red-500/40 px-1.5 py-0.5 text-xs text-red-400 hover:bg-red-500/10"
+                      >
+                        🗑
+                      </button>
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -205,22 +263,25 @@ export default function MetricsConfig({ current, presets: initialPresets }: { cu
 
             {/* footer */}
             <div className="mt-4 flex items-center justify-between gap-2">
-              <button
-                onClick={savePreset}
-                className="rounded-lg border border-white/[.18] px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-white/[.06]"
-              >
+              <button onClick={savePreset} className="rounded-lg border border-white/[.18] px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-white/[.06]">
                 Salvar pré-definição
               </button>
-              <button
-                onClick={apply}
-                disabled={pending}
-                className="rounded-lg bg-lima px-4 py-2 text-sm font-bold text-[var(--noite)] disabled:opacity-50"
-              >
+              <button onClick={apply} disabled={pending} className="rounded-lg bg-lima px-4 py-2 text-sm font-bold text-[var(--noite)] disabled:opacity-50">
                 {pending ? "Aplicando…" : "Aplicar configuração"}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {builder && (
+        <MetricFormulaBuilder
+          fields={fields}
+          values={values}
+          initial={builder.initial}
+          onSave={saveCustom}
+          onClose={() => setBuilder(null)}
+        />
       )}
     </>
   );
