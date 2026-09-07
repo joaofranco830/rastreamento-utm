@@ -12,12 +12,24 @@ export interface SourceFilters {
   ad_accounts?: string[];
 }
 
+export interface DashboardPreset {
+  name: string;
+  cards: string[];
+}
+
+export interface DashboardConfig {
+  /** Cartões ativos, JÁ na ordem em que aparecem. */
+  cards?: string[];
+  /** Pré-definições nomeadas que o usuário salvou. */
+  presets?: DashboardPreset[];
+}
+
 export interface FunnelRow {
   id: number;
   name: string;
   type: string;
   source_filters: SourceFilters | null;
-  dashboard_config: { cards?: string[] } | null;
+  dashboard_config: DashboardConfig | null;
 }
 
 export async function getPerpetuoFunnel(projectId: number): Promise<FunnelRow | null> {
