@@ -118,6 +118,15 @@ export async function handleHotmartWebhook(
           .eq("project_id", projectId)
           .is("contact_hash", null);
       }
+
+      // Auto-registra o produto no registry DO PROJETO (self-healing). Só insere
+      // se novo — ignoreDuplicates preserva included/role/name já configurados.
+      if (parsed.productId) {
+        await supa.from("products").upsert(
+          { project_id: projectId, product_id: parsed.productId, name: parsed.productName },
+          { onConflict: "project_id,product_id", ignoreDuplicates: true },
+        );
+      }
     } catch (e) {
       const code = (e as { code?: string } | null)?.code;
       console.error("[webhook] enriquecimento falhou (venda ok)", { code, transaction: txn });

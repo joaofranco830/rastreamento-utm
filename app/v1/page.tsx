@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { isOwner } from "@/lib/auth";
 import { getDashboardData } from "@/lib/dashboard";
 import { brl, inteiro, pct, mult } from "@/lib/format";
 import LogoutButton from "../logout-button";
@@ -39,6 +40,8 @@ export default async function DashboardV1({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  // Visão da conta inteira (todos os projetos somados): só o dono da conta.
+  if (!(await isOwner())) redirect("/configuracoes");
 
   const { dias } = await searchParams;
   const d = await getDashboardData(dias);
