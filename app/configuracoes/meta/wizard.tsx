@@ -110,29 +110,66 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
         <div>
           <h3 className="text-base font-medium">1. Gere o token na sua Business Manager</h3>
           <p className="mt-1 text-sm text-zinc-500">
-            Faça uma vez por BM. O token é de um <strong>System User</strong> (usuário de sistema), não da sua conta pessoal —
-            assim ele não expira quando você troca a senha.
+            Faça uma vez por BM (~5 min). O token é de um <strong>System User</strong> (usuário de sistema), não da sua conta
+            pessoal — assim ele não expira quando você troca a senha. São 4 partes; siga na ordem.
           </p>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
+
+          <p className="mt-4 text-sm font-medium">Parte A — Crie um aplicativo (App)</p>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            O token precisa estar “amarrado” a um app. Se você <strong>não</strong> tem um app ainda (o caso da maioria), crie
+            um — leva 1 minuto e ele só serve de “chave”, não precisa publicar nada.
+          </p>
+          <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
             <li>
-              Abra <strong>business.facebook.com</strong> → <strong>Configurações do negócio</strong> →{" "}
-              <strong>Usuários → Usuários do sistema</strong>.
+              Abra <strong>developers.facebook.com/apps</strong> → <strong>Criar aplicativo</strong>.
             </li>
             <li>
-              Clique em <strong>Adicionar</strong>, dê um nome (ex.: <em>Rastreamento UTM</em>) e função{" "}
-              <strong>Admin</strong>.
+              Em “Casos de uso”, escolha <strong>Outro</strong> → tipo <strong>Empresa</strong> (Business). Dê um nome (ex.:{" "}
+              <em>Rastreamento UTM</em>) e, no campo <strong>Portfólio empresarial</strong>, selecione a sua BM.
             </li>
             <li>
-              No usuário criado, clique em <strong>Adicionar ativos</strong> → <strong>Contas de anúncio</strong> → marque a
-              conta desta BM → permissão <strong>Ver desempenho</strong> (ou controle total).
+              Clique em <strong>Criar aplicativo</strong> (pode pedir sua senha do Facebook). Pronto — não precisa configurar
+              produto nem enviar para revisão.
             </li>
-            <li>
-              Clique em <strong>Gerar novo token</strong>. Selecione o app (qualquer app da BM serve) e as permissões{" "}
-              <code>ads_read</code> e <code>read_insights</code>. Expiração: <strong>Nunca</strong>.
-            </li>
-            <li>Copie o token gerado (começa com algo tipo <code>EAAB…</code>) — ele só aparece uma vez.</li>
           </ol>
-          <div className="mt-4 flex justify-end">
+
+          <p className="mt-4 text-sm font-medium">Parte B — Crie o usuário de sistema</p>
+          <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
+            <li>
+              Abra <strong>business.facebook.com/settings</strong> → <strong>Usuários → Usuários do sistema</strong>.
+            </li>
+            <li>
+              <strong>Adicionar</strong> → nome (ex.: <em>Rastreamento UTM</em>) → função <strong>Admin</strong> → criar.
+            </li>
+          </ol>
+
+          <p className="mt-4 text-sm font-medium">Parte C — Dê acesso à conta de anúncio e ao app</p>
+          <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
+            <li>
+              No usuário criado, <strong>Adicionar ativos</strong> → <strong>Contas de anúncio</strong> → marque a conta desta
+              BM → permissão <strong>Ver desempenho</strong> (ou controle total) → salvar.
+            </li>
+            <li>
+              <strong>Adicionar ativos</strong> de novo → <strong>Aplicativos</strong> → marque o app que você criou na Parte A
+              → <strong>controle total</strong> → salvar.
+            </li>
+          </ol>
+
+          <p className="mt-4 text-sm font-medium">Parte D — Gere o token</p>
+          <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
+            <li>
+              Ainda no usuário de sistema, clique em <strong>Gerar novo token</strong> e selecione o <strong>app da Parte A</strong>.
+            </li>
+            <li>
+              Marque as permissões <code>ads_read</code> e <code>read_insights</code>. Expiração: <strong>Nunca</strong> →
+              gerar.
+            </li>
+            <li>
+              Copie o token (começa com <code>EAA…</code>) — ele <strong>só aparece uma vez</strong>. Guarde e volte aqui.
+            </li>
+          </ol>
+
+          <div className="mt-5 flex justify-end">
             <button
               onClick={() => setStep(2)}
               className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background"
