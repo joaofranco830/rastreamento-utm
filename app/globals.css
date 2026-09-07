@@ -1,26 +1,76 @@
 @import "tailwindcss";
 
+/* Marca "Sistema de Validação de Criativos" — Guia 03 · Escala.
+   App dark-first (Noite domina). Forçamos o variante `dark:` por classe (o
+   <html> carrega `dark`), então todos os utilitários dark:* existentes valem. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* base dark-first */
+  --background: #0e0e14; /* Noite */
+  --foreground: #f1f1f4; /* Branco */
+  /* superfícies */
+  --noite-2: #16161f;
+  --tinta: #12121a;
+  /* acentos da marca */
+  --eletrico: #4d5bff;
+  --eletrico-esc: #3a46d9;
+  --eletrico-cl: #8a93ff;
+  --lima: #d6ff45;
+  --lima-esc: #b4dc22;
+  --aco: #7e7e8c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-noite2: var(--noite-2);
+  --color-tinta: var(--tinta);
+  --color-eletrico: var(--eletrico);
+  --color-eletrico-esc: var(--eletrico-esc);
+  --color-eletrico-cl: var(--eletrico-cl);
+  --color-lima: var(--lima);
+  --color-lima-esc: var(--lima-esc);
+  --color-aco: var(--aco);
+  --font-sans: var(--font-sora);
+  --font-mono: var(--font-jetbrains);
+  --font-display: var(--font-anton);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sora), "Sora", system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Números e títulos de destaque: Anton, sempre caixa alta. */
+.font-display {
+  font-family: var(--font-anton), "Anton", Impact, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  line-height: 0.92;
+}
+
+/* Links de conteúdo (o app usa poucos <a> crus; a nav tem estilo próprio). */
+.prose-link {
+  color: var(--eletrico-cl);
+  border-bottom: 1px solid rgba(77, 91, 255, 0.35);
+}
+.prose-link:hover {
+  color: var(--eletrico);
+}
+
+/* Barra de rolagem discreta no tema escuro. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(241, 241, 244, 0.14);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(241, 241, 244, 0.24);
 }

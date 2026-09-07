@@ -70,8 +70,8 @@ export default function DateButton() {
                 onClick={() => go(`dias=${p.d}`)}
                 className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
                   dias === p.d
-                    ? "bg-foreground text-background"
-                    : "border border-black/[.1] hover:bg-black/[.04] dark:border-white/[.14] dark:hover:bg-white/[.06]"
+                    ? "bg-eletrico text-white"
+                    : "border border-white/[.14] hover:bg-white/[.06]"
                 }`}
               >
                 {p.l}

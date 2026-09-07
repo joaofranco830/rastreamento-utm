@@ -19,18 +19,18 @@ const ROLE_ORDER = ["principal", "order_bump", "upsell", "downsell", "other"];
 
 function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-      <p className="text-xs text-zinc-500">{label}</p>
-      <p className="mt-1 text-xl font-semibold tracking-tight">{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-zinc-400">{sub}</p>}
+    <div className="rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4">
+      <p className="font-mono text-[11px] uppercase tracking-wider text-aco">{label}</p>
+      <p className="font-display mt-2 text-2xl text-foreground">{value}</p>
+      {sub && <p className="mt-1 text-xs text-zinc-400">{sub}</p>}
     </div>
   );
 }
 
 function FunnelStep({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="flex-1 rounded-xl border border-black/[.08] p-4 text-center dark:border-white/[.12]">
-      <p className="text-2xl font-semibold tracking-tight">{value}</p>
+    <div className="flex-1 rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4 text-center">
+      <p className="font-display text-3xl text-lima">{value}</p>
       <p className="mt-1 text-xs text-zinc-500">{label}</p>
       {hint && <p className="mt-0.5 text-[11px] text-zinc-400">{hint}</p>}
     </div>

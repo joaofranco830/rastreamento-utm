@@ -41,6 +41,16 @@ const GROUPS: Group[] = [
   },
 ];
 
+/** Chevron duplo ascendente — símbolo da marca (Guia §02). */
+function Chevron({ size = 26, color = "var(--lima)" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M8 28 L24 14 L40 28" stroke={color} strokeWidth="4.4" />
+      <path d="M8 39 L24 25 L40 39" stroke={color} strokeWidth="4.4" opacity="0.42" />
+    </svg>
+  );
+}
+
 function NavLink({ item, active }: { item: Item; active: string }) {
   const isActive = active === item.href || active === item.label;
   return (
@@ -48,8 +58,8 @@ function NavLink({ item, active }: { item: Item; active: string }) {
       href={item.href}
       className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
         isActive
-          ? "bg-foreground font-medium text-background"
-          : "text-zinc-600 hover:bg-black/[.04] dark:text-zinc-300 dark:hover:bg-white/[.06]"
+          ? "bg-eletrico font-medium text-white"
+          : "text-zinc-400 hover:bg-white/[.06] hover:text-zinc-200"
       }`}
     >
       <span className="flex items-center gap-1.5">
@@ -57,7 +67,7 @@ function NavLink({ item, active }: { item: Item; active: string }) {
         {item.label}
       </span>
       {item.badge && (
-        <span className="rounded-full bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+        <span className="rounded-full bg-lima/15 px-1.5 py-0.5 text-[10px] font-medium text-lima-esc">
           {item.badge}
         </span>
       )}
@@ -81,10 +91,15 @@ export default async function Shell({
   return (
     <div className="flex min-h-full w-full flex-1">
       {/* Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col gap-5 border-r border-black/[.07] px-3 py-5 md:flex dark:border-white/[.08]">
-        <div className="px-2">
-          <p className="text-sm font-semibold tracking-tight">Rastreamento UTM</p>
-          <p className="text-[11px] text-zinc-400">Franco Advertising</p>
+      <aside className="hidden w-60 shrink-0 flex-col gap-5 border-r border-white/[.08] bg-[var(--noite-2)] px-3 py-5 md:flex">
+        <div className="flex items-center gap-2.5 px-2">
+          <Chevron size={30} />
+          <div className="leading-none">
+            <p className="font-display text-[19px] text-foreground">
+              RASTREA<span className="text-eletrico">·</span>MENTO
+            </p>
+            <p className="mt-0.5 font-mono text-[10px] tracking-wider text-aco">FRANCO ADVERTISING</p>
+          </div>
         </div>
 
         {owner && (
