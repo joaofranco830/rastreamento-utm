@@ -4,6 +4,31 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { setProjectCredential } from "@/lib/credentials";
+import { getVturbToken, listPlayers, VturbError } from "@/lib/vturb/client";
+
+/** Testa a conexão com o VTurb: lista os players (vídeos) da conta. Admin-only. */
+export async function testVturbConnection(): Promise<{ ok: boolean; error?: string; players?: { id: string; name: string }[] }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner pode testar a conexão." };
+  }
+  const token = await getVturbToken(projectId).catch(() => null);
+  if (!token) return { ok: false, error: "Nenhuma API key do VTurb salva neste projeto." };
+  try {
+    const players = await listPlayers(token);
+    return { ok: true, players: players.slice(0, 50).map((p) => ({ id: p.id, name: p.name })) };
+  } catch (e) {
+    if (e instanceof VturbError) {
+      if (e.status === 401) return { ok: false, error: "API key inválida (401). Confira a chave no VTurb." };
+      if (e.status === 429) return { ok: false, error: "Limite de requisições atingido (429). Tente em instantes." };
+      return { ok: false, error: `Erro do VTurb${e.code ? ` (código ${e.code})` : ""}: ${e.message}` };
+    }
+    return { ok: false, error: "Falha ao conectar no VTurb." };
+  }
+}
 
 /** Salva o Hottok do projeto no cofre (cifrado). Só admin/owner. (INT-03) */
 export async function saveHottokAction(value: string): Promise<{ ok: boolean; error?: string }> {

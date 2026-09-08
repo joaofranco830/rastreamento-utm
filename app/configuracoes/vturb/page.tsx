@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { getActiveProjectId, getVisibleProjects } from "@/lib/tenant";
 import { hasCredential } from "@/lib/credentials";
 import { VturbForm } from "../credential-forms";
+import { VturbTestButton } from "../vturb-test";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,8 @@ export default async function VturbTab() {
       </ol>
 
       <VturbForm configured={keySet} />
+
+      {keySet && <VturbTestButton />}
 
       <div className="mt-6 rounded-xl border border-black/[.08] bg-black/[.02] p-4 text-sm text-zinc-600 dark:border-white/[.1] dark:bg-white/[.02] dark:text-zinc-300">
         <p className="font-medium text-foreground">Como o VTurb conversa com a Hotmart</p>
