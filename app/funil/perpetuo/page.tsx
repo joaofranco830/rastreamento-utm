@@ -133,7 +133,7 @@ export default async function DashboardPage({
   const blockOf: Record<string, React.ReactNode> = {
     revenue_by_role: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Faturamento por etapa</h2>
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">Faturamento por etapa</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {ROLE_ORDER.map((r) => {
             const v = s.revenue_by_role[r] ?? 0;
@@ -151,19 +151,19 @@ export default async function DashboardPage({
     ),
     products: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Vendas por produto e pagamento</h2>
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">Vendas por produto e pagamento</h2>
         <SalesTables products={s.by_product} payments={s.by_payment} />
       </section>
     ),
     product_payment: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Produto × forma de pagamento</h2>
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">Produto × forma de pagamento</h2>
         <ProductPaymentMatrix cells={d.productPayment} />
       </section>
     ),
     funnel: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Funil</h2>
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">Funil</h2>
         <div className="flex flex-wrap gap-3">
           <FunnelStep
             label="Connect rate"
@@ -187,7 +187,7 @@ export default async function DashboardPage({
     ),
     ascension: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">
           LTV <span className="text-zinc-600">· {inteiro(s.ltv.unique_customers)} clientes únicos · {inteiro(front)} vendas do front</span>
         </h2>
 
@@ -243,7 +243,7 @@ export default async function DashboardPage({
     ),
     timeseries: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Evolução diária</h2>
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">Evolução diária</h2>
         <div className="rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4">
           <TimeseriesChart data={d.series} />
         </div>
@@ -251,7 +251,7 @@ export default async function DashboardPage({
     ),
     refund: (
       <section className="mb-4">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Reembolsos</h2>
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">Reembolsos</h2>
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Card label="Compras reembolsadas" value={inteiro(s.refunds.total.count)} sub={s.refunds.chargeback.count > 0 ? `inclui ${inteiro(s.refunds.chargeback.count)} chargeback` : undefined} valueClass={C_RED} />
           <Card label="Total estornado" value={brl(s.refunds.total.value)} sub={`de ${inteiro(s.paid_count)} pagos`} valueClass={C_RED} />
@@ -288,7 +288,7 @@ export default async function DashboardPage({
     ),
     lost: (
       <section className="mb-8">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Vendas perdidas</h2>
+        <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">Vendas perdidas</h2>
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Card label="Compras canceladas" value={inteiro(lost.canceled.count)} sub={`${brl(lost.canceled.value)} · não aprovadas`} valueClass={C_RED} />
           <Card label="Emitidos e não pagos" value={inteiro(lost.unpaid.count)} sub="pix/boleto sem pagamento" valueClass={C_RED} />
