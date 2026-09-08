@@ -4,11 +4,51 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { setProjectCredential } from "@/lib/credentials";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { getVturbToken, listPlayers, VturbError } from "@/lib/vturb/client";
-import { runVturbSync } from "@/lib/vturb/sync";
+import { runVturbSync, refreshVturbPlayers, PLAN_RPM, type VturbPlan } from "@/lib/vturb/sync";
 
-/** Sincroniza o Analytics do VSL (VTurb) do projeto. Admin-only. */
-export async function syncVturbAction(): Promise<{ ok: boolean; error?: string; players?: number; rows?: number; withData?: number; errors?: number; firstError?: string }> {
+/** Atualiza a lista de VSLs da conta (barato). Admin-only. */
+export async function refreshVturbPlayersAction(): Promise<{ ok: boolean; count?: number; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner." };
+  }
+  try {
+    const r = await refreshVturbPlayers(projectId);
+    if (!r.ok) return { ok: false, error: r.skipped === "no_credentials" ? "Salve a API key do VTurb primeiro." : r.error ?? "Falha." };
+    revalidatePath("/funil/perpetuo/vsls");
+    return { ok: true, count: r.count };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Falha ao listar VSLs." };
+  }
+}
+
+/** Define quais VSLs (players) entram no sync. Admin-only. */
+export async function setVturbIncludedAction(includedIds: string[]): Promise<{ ok: boolean; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner." };
+  }
+  const supa = getSupabaseAdmin();
+  const ids = new Set(includedIds);
+  // Marca as selecionadas e desmarca o resto (dentro do projeto).
+  const { data: all } = await supa.from("vturb_players").select("player_id").eq("project_id", projectId);
+  for (const row of (all ?? []) as { player_id: string }[]) {
+    await supa.from("vturb_players").update({ included: ids.has(row.player_id) }).eq("project_id", projectId).eq("player_id", row.player_id);
+  }
+  revalidatePath("/funil/perpetuo/vsls");
+  return { ok: true };
+}
+
+/** Sincroniza o Analytics do VSL (VTurb) das VSLs selecionadas. Admin-only. */
+export async function syncVturbAction(plan?: string): Promise<{ ok: boolean; error?: string; players?: number; rows?: number; withData?: number; errors?: number; firstError?: string }> {
   const projectId = await getActiveProjectId();
   if (!projectId) return { ok: false, error: "Sem projeto ativo." };
   try {
@@ -16,8 +56,9 @@ export async function syncVturbAction(): Promise<{ ok: boolean; error?: string; 
   } catch {
     return { ok: false, error: "Só admin/owner pode sincronizar." };
   }
+  const p = (plan && plan in PLAN_RPM ? plan : "basic") as VturbPlan;
   try {
-    const r = await runVturbSync(projectId);
+    const r = await runVturbSync(projectId, { plan: p });
     if (!r.ok) return { ok: false, error: r.skipped === "no_credentials" ? "Salve a API key do VTurb primeiro." : r.error ?? "Falha no sync." };
     revalidatePath("/funil/perpetuo/vsls");
     return { ok: true, players: r.players, rows: r.rows, withData: r.withData, errors: r.errors, firstError: r.firstError };

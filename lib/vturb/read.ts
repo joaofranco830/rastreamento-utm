@@ -83,10 +83,18 @@ function groupBy(rows: DailyRow[], key: (r: DailyRow) => string): Map<string, Da
   return m;
 }
 
+export interface VslPlayerOption {
+  player_id: string;
+  name: string | null;
+  included: boolean;
+  duration: number;
+}
+
 export interface VslData {
   videos: VslVideo[];
   byCampaign: VslBreakdownRow[];
   byContent: VslBreakdownRow[];
+  players: VslPlayerOption[];
   lastSync: string | null;
   hasKey: boolean;
 }
@@ -96,10 +104,10 @@ export async function getVslData(projectId: number, from: string, to: string): P
   const [dailyRes, playersRes] = await Promise.all([
     supabase.from("vturb_daily").select("player_id,dimension,value,viewed,plays,finished,clicked,over_pitch,engagement_rate,conversions,amount_brl")
       .eq("project_id", projectId).gte("date", from).lte("date", to),
-    supabase.from("vturb_players").select("player_id,name,duration,pitch_time,synced_at").eq("project_id", projectId),
+    supabase.from("vturb_players").select("player_id,name,duration,pitch_time,included,synced_at").eq("project_id", projectId).order("name"),
   ]);
   const daily = (dailyRes.data ?? []) as DailyRow[];
-  const players = (playersRes.data ?? []) as { player_id: string; name: string | null; duration: number; pitch_time: number; synced_at: string }[];
+  const players = (playersRes.data ?? []) as { player_id: string; name: string | null; duration: number; pitch_time: number; included: boolean; synced_at: string }[];
   const pMap = new Map(players.map((p) => [p.player_id, p]));
   const lastSync = players.reduce<string | null>((max, p) => (!max || p.synced_at > max ? p.synced_at : max), null);
 
@@ -120,6 +128,7 @@ export async function getVslData(projectId: number, from: string, to: string): P
     videos,
     byCampaign: breakdown("utm_campaign"),
     byContent: breakdown("utm_content"),
+    players: players.map((p) => ({ player_id: p.player_id, name: p.name, included: !!p.included, duration: p.duration ?? 0 })),
     lastSync,
     hasKey: true,
   };
