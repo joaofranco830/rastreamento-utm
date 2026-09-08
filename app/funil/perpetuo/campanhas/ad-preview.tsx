@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { getAdPreview } from "./actions";
 
 /** Botão "ver criativo" + modal com a prévia (iframe do Meta). */
@@ -9,6 +10,8 @@ export default function AdPreview({ adMetaId, name }: { adMetaId: string | null;
   const [html, setHtml] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   async function openPreview() {
     setOpen(true);
@@ -35,8 +38,8 @@ export default function AdPreview({ adMetaId, name }: { adMetaId: string | null;
         👁
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" onClick={() => setOpen(false)}>
+      {open && mounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4" onClick={() => setOpen(false)}>
           <div className="flex max-h-[90vh] w-full max-w-[400px] flex-col rounded-2xl border border-white/[.12] bg-[var(--noite-2)] p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -59,7 +62,8 @@ export default function AdPreview({ adMetaId, name }: { adMetaId: string | null;
               ) : null}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

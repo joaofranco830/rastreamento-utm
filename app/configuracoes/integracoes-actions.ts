@@ -8,7 +8,7 @@ import { getVturbToken, listPlayers, VturbError } from "@/lib/vturb/client";
 import { runVturbSync } from "@/lib/vturb/sync";
 
 /** Sincroniza o Analytics do VSL (VTurb) do projeto. Admin-only. */
-export async function syncVturbAction(): Promise<{ ok: boolean; error?: string; players?: number; rows?: number }> {
+export async function syncVturbAction(): Promise<{ ok: boolean; error?: string; players?: number; rows?: number; withData?: number; errors?: number; firstError?: string }> {
   const projectId = await getActiveProjectId();
   if (!projectId) return { ok: false, error: "Sem projeto ativo." };
   try {
@@ -20,7 +20,7 @@ export async function syncVturbAction(): Promise<{ ok: boolean; error?: string; 
     const r = await runVturbSync(projectId);
     if (!r.ok) return { ok: false, error: r.skipped === "no_credentials" ? "Salve a API key do VTurb primeiro." : r.error ?? "Falha no sync." };
     revalidatePath("/funil/perpetuo/vsls");
-    return { ok: true, players: r.players, rows: r.rows };
+    return { ok: true, players: r.players, rows: r.rows, withData: r.withData, errors: r.errors, firstError: r.firstError };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Falha no sync do VTurb." };
   }
