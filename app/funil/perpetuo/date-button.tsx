@@ -224,8 +224,8 @@ export default function DateButton() {
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[.08] pt-3">
               <div className="text-xs text-zinc-400">
-                {start ? shortLabel(start) : "—"} <span className="text-zinc-600">→</span> {end ? shortLabel(end) : (start ? "selecione o fim" : "—")}
-                <span className="ml-2 text-zinc-600">· Fuso: São Paulo</span>
+                {start ? shortLabel(start) : "—"} <span className="text-zinc-400">→</span> {end ? shortLabel(end) : (start ? "selecione o fim" : "—")}
+                <span className="ml-2 text-zinc-400">· Fuso: São Paulo</span>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => setOpen(false)} className="rounded-lg border border-white/[.16] px-3 py-1.5 text-sm text-zinc-300 hover:bg-white/[.06]">Cancelar</button>

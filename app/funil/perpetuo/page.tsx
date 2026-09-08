@@ -50,7 +50,7 @@ function FunnelStep({ label, value, hint }: { label: string; value: string; hint
   return (
     <div className="flex-1 rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4 text-center">
       <p className="font-display text-3xl text-lima">{value}</p>
-      <p className="mt-1 text-xs text-zinc-500">{label}</p>
+      <p className="mt-1 text-xs text-zinc-300">{label}</p>
       {hint && <p className="mt-0.5 text-[11px] text-zinc-400">{hint}</p>}
     </div>
   );
@@ -188,7 +188,7 @@ export default async function DashboardPage({
     ascension: (
       <section className="mb-8">
         <h2 className="mb-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">
-          LTV <span className="text-zinc-600">· {inteiro(s.ltv.unique_customers)} clientes únicos · {inteiro(front)} vendas do front</span>
+          LTV <span className="text-zinc-300">· {inteiro(s.ltv.unique_customers)} clientes únicos · {inteiro(front)} vendas do front</span>
         </h2>
 
         {/* LTV / recompra / assinaturas */}
@@ -298,7 +298,7 @@ export default async function DashboardPage({
 
         {/* fluxo dentro do checkout */}
         <h3 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-aco">
-          Fluxo do checkout <span className="text-zinc-600">· {inteiro(ck.entered)} entraram{s.checkouts_source === "meta" ? " (Meta)" : ""} · só front</span>
+          Fluxo do checkout <span className="text-zinc-300">· {inteiro(ck.entered)} entraram{s.checkouts_source === "meta" ? " (Meta)" : ""} · só front</span>
         </h3>
         <div className="flex flex-wrap gap-3">
           <FunnelStep label="Comprou (front)" value={pct(ckPct(ck.bought))} hint={`${inteiro(ck.bought)} compras`} />
