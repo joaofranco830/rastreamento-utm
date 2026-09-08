@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CreativeRow, Metrics } from "@/lib/campanhas";
 import { COLUMN_FMT, COLUMN_LABEL, orderedColumns } from "../campanhas/columns";
 import ColumnsConfig from "../campanhas/columns-config";
+import RowLimit from "../campanhas/row-limit";
+import AdPreview from "../campanhas/ad-preview";
 import { loadCreativeRows } from "../campanhas/actions";
 
 interface Product {
@@ -41,6 +43,7 @@ export default function CreativesTable({
   presets: { name: string; cols: string[] }[];
 }) {
   const [productIds, setProductIds] = useState<string[]>([]);
+  const [limit, setLimit] = useState(20);
   const [rows, setRows] = useState<CreativeRow[]>(initialRows);
   const [loading, setLoading] = useState(false);
   const [prodOpen, setProdOpen] = useState(false);
@@ -57,7 +60,7 @@ export default function CreativesTable({
     }
     let cancelled = false;
     setLoading(true);
-    loadCreativeRows({ productIds, from, to })
+    loadCreativeRows({ productIds, from, to, limit })
       .then((r) => {
         if (!cancelled) setRows(r.ok ? r.rows : []);
       })
@@ -68,7 +71,7 @@ export default function CreativesTable({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productKey, from, to]);
+  }, [productKey, limit, from, to]);
 
   const totals = useMemo(() => sumMetrics(rows), [rows]);
 
@@ -95,6 +98,7 @@ export default function CreativesTable({
       <div className="flex flex-wrap items-center gap-2 border-b border-white/[.08] px-2 py-2">
         <span className="px-2 font-mono text-[11px] uppercase tracking-wider text-aco">Consolidado por criativo (mesmo nome entre campanhas)</span>
         <div className="ml-auto flex items-center gap-2">
+          <RowLimit value={limit} onChange={setLimit} />
           <div className="relative">
             <button onClick={() => setProdOpen((o) => !o)} className="inline-flex items-center gap-2 rounded-lg border border-white/[.18] px-3 py-2 text-sm text-zinc-200 hover:bg-white/[.06]">
               <span aria-hidden>🏷️</span> {prodLabel} <span className="text-zinc-500" aria-hidden>▾</span>
@@ -133,7 +137,13 @@ export default function CreativesTable({
             ) : (
               rows.map((r, i) => (
                 <tr key={`${r.name}-${i}`} className="border-b border-white/[.05] hover:bg-white/[.03]">
-                  <td className="sticky left-0 z-10 min-w-[320px] max-w-[380px] truncate bg-[var(--noite-2)] px-3 py-3 font-medium text-foreground" title={r.name ?? ""}>{r.name ?? "—"}</td>
+                  <td className="sticky left-0 z-10 min-w-[320px] max-w-[400px] bg-[var(--noite-2)] px-3 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-zinc-500">{i + 1}</span>
+                      <AdPreview adMetaId={r.ad_meta_id} name={r.name} />
+                      <span className="truncate font-medium text-foreground" title={r.name ?? ""}>{r.name ?? "—"}</span>
+                    </div>
+                  </td>
                   {activeCols.map((c) => (
                     <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-200">{COLUMN_FMT[c](r)}</td>
                   ))}

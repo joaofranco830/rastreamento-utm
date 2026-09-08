@@ -29,6 +29,27 @@ export function envMetaCreds(): MetaCreds | null {
   return t && a ? { token: t, accounts: [a] } : null;
 }
 
+/**
+ * Busca o preview (iframe HTML do Meta) de UM anúncio, para visualizar o
+ * criativo. Tenta alguns formatos até um responder. Retorna o HTML do <iframe>
+ * ou null se indisponível.
+ */
+export async function fetchAdPreview(token: string, adMetaId: string): Promise<string | null> {
+  const formats = ["MOBILE_FEED_STANDARD", "DESKTOP_FEED_STANDARD", "INSTAGRAM_STANDARD"];
+  for (const fmt of formats) {
+    const params = new URLSearchParams({ ad_format: fmt, access_token: token });
+    try {
+      const res = await fetch(`${BASE}/${adMetaId}/previews?${params.toString()}`, { cache: "no-store" });
+      const json = (await res.json()) as { data?: { body?: string }[]; error?: unknown };
+      const body = json.data?.[0]?.body;
+      if (body && body.includes("<iframe")) return body;
+    } catch {
+      // tenta o próximo formato
+    }
+  }
+  return null;
+}
+
 /** Lista as contas de anúncio que o token enxerga (passo "testar conexão" do wizard). */
 export async function listAdAccounts(tok: string): Promise<{ id: string; name: string }[]> {
   const params = new URLSearchParams({ fields: "account_id,name", limit: "200", access_token: tok });

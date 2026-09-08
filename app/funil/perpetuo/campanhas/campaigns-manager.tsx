@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CampaignRow, Level, Metrics } from "@/lib/campanhas";
 import { COLUMN_FMT, COLUMN_LABEL, orderedColumns } from "./columns";
 import ColumnsConfig from "./columns-config";
+import RowLimit from "./row-limit";
+import AdPreview from "./ad-preview";
 import { loadCampaignRows } from "./actions";
 
 interface Product {
@@ -18,7 +20,6 @@ const LEVELS: { key: Level; label: string; icon: string; order: number }[] = [
   { key: "creative", label: "Anúncios", icon: "▢", order: 2 },
 ];
 const LEVEL_NOUN: Record<Level, string> = { campaign: "campanhas", adset: "conjuntos", creative: "anúncios" };
-const ROW_LIMITS = [10, 20, 50, 100];
 
 const EMPTY_METRICS: Metrics = {
   spend: 0, impressions: 0, link_clicks: 0, leads: 0, follows: 0,
@@ -177,11 +178,7 @@ export default function CampaignsManager({
 
         <div className="ml-auto flex items-center gap-2">
           {/* limite de linhas */}
-          <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="rounded-lg border border-white/[.18] bg-[var(--noite-2)] px-2 py-2 text-sm text-zinc-200">
-            {ROW_LIMITS.map((n) => (
-              <option key={n} value={n}>{n} linhas</option>
-            ))}
-          </select>
+          <RowLimit value={limit} onChange={setLimit} />
 
           {/* filtro de produto */}
           <div className="relative">
@@ -237,7 +234,10 @@ export default function CampaignsManager({
                     </td>
                     <td className={`sticky left-10 z-10 min-w-[320px] max-w-[380px] px-3 py-3 ${isSel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
                       <div className="mb-1"><StatusPill status={r.effective_status} /></div>
-                      <div className="truncate font-medium text-eletrico-cl" title={r.name ?? ""}>{r.name ?? "—"}</div>
+                      <div className="flex items-center gap-2">
+                        {level === "creative" && <AdPreview adMetaId={r.meta_id} name={r.name} />}
+                        <span className="truncate font-medium text-eletrico-cl" title={r.name ?? ""}>{r.name ?? "—"}</span>
+                      </div>
                     </td>
                     {activeCols.map((c) => (
                       <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-200">{COLUMN_FMT[c](r)}</td>
