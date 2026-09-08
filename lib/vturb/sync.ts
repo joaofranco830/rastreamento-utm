@@ -63,37 +63,55 @@ function rowToRecord(projectId: number, playerId: string, dimension: string, val
   };
 }
 
-export async function runVturbSync(projectId: number, sinceDays = 120): Promise<VturbSyncResult> {
+export type VturbPlan = "basic" | "pro" | "scale" | "enterprise";
+/** Requisições/min por plano (doc VTurb). Usamos ~metade como margem segura. */
+export const PLAN_RPM: Record<VturbPlan, number> = { basic: 60, pro: 120, scale: 300, enterprise: 800 };
+
+/** Atualiza a LISTA de VSLs (barato: 1 GET). Não mexe na seleção (included). */
+export async function refreshVturbPlayers(projectId: number): Promise<{ ok: boolean; count?: number; error?: string; skipped?: string }> {
+  const token = await getVturbToken(projectId).catch(() => null);
+  if (!token) return { ok: false, skipped: "no_credentials" };
+  let players;
+  try {
+    players = await listPlayers(token);
+  } catch (e) {
+    return { ok: false, error: e instanceof VturbError ? e.message : "Falha ao listar VSLs." };
+  }
+  if (players.length) {
+    const now = new Date().toISOString();
+    // Não inclui 'included' no upsert → preserva a seleção existente.
+    const { error } = await getSupabaseAdmin().from("vturb_players").upsert(
+      players.map((p) => ({
+        project_id: projectId, player_id: p.id, name: p.name,
+        duration: p.duration ?? 0, pitch_time: p.pitch_time ?? 0,
+        vturb_created_at: p.created_at ?? null, synced_at: now,
+      })),
+      { onConflict: "project_id,player_id" },
+    );
+    if (error) throw error;
+  }
+  return { ok: true, count: players.length };
+}
+
+export async function runVturbSync(projectId: number, opts?: { plan?: VturbPlan; sinceDays?: number }): Promise<VturbSyncResult> {
+  const plan = opts?.plan ?? "basic";
+  const sinceDays = opts?.sinceDays ?? 120;
   const token = await getVturbToken(projectId).catch(() => null);
   if (!token) return { ok: false, skipped: "no_credentials" };
 
   const supa = getSupabaseAdmin();
   const end = new Date();
-  const start_date = ymd(new Date(end.getTime() - sinceDays * 86400000));
-  const end_date = ymd(end);
+  // Estes endpoints exigem datetime COM hora/min/seg (senão 400).
+  const start_date = ymd(new Date(end.getTime() - sinceDays * 86400000)) + " 00:00:00";
+  const end_date = ymd(end) + " 23:59:59";
+  const delayMs = Math.max(150, Math.ceil(60000 / (PLAN_RPM[plan] * 0.5)));
 
-  let players;
-  try {
-    players = await listPlayers(token);
-  } catch (e) {
-    return { ok: false, error: e instanceof VturbError ? e.message : "Falha ao listar players." };
-  }
-
-  if (players.length) {
-    const now = new Date().toISOString();
-    const { error } = await supa.from("vturb_players").upsert(
-      players.map((p) => ({
-        project_id: projectId,
-        player_id: p.id,
-        name: p.name,
-        duration: p.duration ?? 0,
-        pitch_time: p.pitch_time ?? 0,
-        vturb_created_at: p.created_at ?? null,
-        synced_at: now,
-      })),
-      { onConflict: "project_id,player_id" },
-    );
-    if (error) throw error;
+  // Sincroniza SÓ as VSLs selecionadas (included=true).
+  const { data: incl } = await supa.from("vturb_players")
+    .select("player_id,name,duration,pitch_time").eq("project_id", projectId).eq("included", true);
+  const players = (incl ?? []).map((p) => ({ id: p.player_id as string, name: p.name as string | null, duration: (p.duration as number) ?? 0, pitch_time: (p.pitch_time as number) ?? 0 }));
+  if (players.length === 0) {
+    return { ok: false, skipped: "no_players", error: "Nenhuma VSL selecionada. Atualize a lista e escolha as VSLs a sincronizar." };
   }
 
   let rows = 0;
@@ -143,7 +161,7 @@ export async function runVturbSync(projectId: number, sinceDays = 120): Promise<
       noteError(e);
     }
     if (got > 0) withData++;
-    await sleep(300); // respeita o rate limit (≈2 chamadas/300ms)
+    await sleep(delayMs); // respeita o rate limit conforme o plano
   }
 
   return { ok: true, players: players.length, rows, withData, errors, firstError: firstError ?? undefined };

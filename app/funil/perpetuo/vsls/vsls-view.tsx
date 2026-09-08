@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { VslData, VslMetrics, VslVideo, VslBreakdownRow } from "@/lib/vturb/read";
-import { syncVturbAction } from "@/app/configuracoes/integracoes-actions";
+import type { VslData, VslMetrics, VslVideo, VslBreakdownRow, VslPlayerOption } from "@/lib/vturb/read";
+import { syncVturbAction, refreshVturbPlayersAction, setVturbIncludedAction } from "@/app/configuracoes/integracoes-actions";
 import { brl, inteiro } from "@/lib/format";
+
+const PLANS: { key: string; label: string }[] = [
+  { key: "basic", label: "Basic (60/min)" },
+  { key: "pro", label: "Pro (120/min)" },
+  { key: "scale", label: "Scale (300/min)" },
+  { key: "enterprise", label: "Enterprise (800/min)" },
+];
 
 const pct1 = (v: number) => `${(Number(v) || 0).toFixed(1).replace(".", ",")}%`;
 const secs = (v: number) => {
@@ -25,11 +32,23 @@ export default function VslsView({ data, hasKey }: { data: VslData; hasKey: bool
   const [tab, setTab] = useState<Tab>("videos");
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const [plan, setPlan] = useState("basic");
+  const [manage, setManage] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("vturb_plan");
+      if (saved) setPlan(saved);
+    } catch { /* ignore */ }
+  }, []);
+  function pickPlan(p: string) {
+    setPlan(p);
+    try { localStorage.setItem("vturb_plan", p); } catch { /* ignore */ }
+  }
 
   function sync() {
     setMsg(null);
     start(async () => {
-      const r = await syncVturbAction();
+      const r = await syncVturbAction(plan);
       if (!r.ok) {
         setMsg(r.error ?? "Falha.");
       } else {
@@ -60,6 +79,14 @@ export default function VslsView({ data, hasKey }: { data: VslData; hasKey: bool
             </button>
           ))}
         </div>
+        <select
+          value={plan}
+          onChange={(e) => pickPlan(e.target.value)}
+          title="Seu plano do VTurb (define o limite de requisições/min)"
+          className="rounded-lg border border-white/[.16] bg-[var(--noite-2)] px-2 py-2 text-sm text-zinc-200"
+        >
+          {PLANS.map((p) => <option key={p.key} value={p.key}>Plano {p.label}</option>)}
+        </select>
         <button
           onClick={sync}
           disabled={pending}
@@ -67,11 +94,19 @@ export default function VslsView({ data, hasKey }: { data: VslData; hasKey: bool
         >
           {pending ? "Sincronizando…" : "⟳ Sincronizar VTurb"}
         </button>
+        <button
+          onClick={() => setManage((v) => !v)}
+          className="rounded-lg border border-white/[.18] px-3 py-2 text-sm text-zinc-200 hover:bg-white/[.06]"
+        >
+          ⚙ Gerenciar VSLs ({data.players.filter((p) => p.included).length}/{data.players.length})
+        </button>
         {data.lastSync && (
           <span className="text-xs text-zinc-400">Último sync: {new Date(data.lastSync).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
         )}
-        {msg && <span className="text-xs text-zinc-300">{msg}</span>}
+        {msg && <span className="w-full text-xs text-zinc-300">{msg}</span>}
       </div>
+
+      {manage && <ManagePanel players={data.players} />}
 
       {!hasKey && (
         <p className="mb-3 rounded-lg border border-amber-500/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
@@ -88,6 +123,76 @@ export default function VslsView({ data, hasKey }: { data: VslData; hasKey: bool
       {tab === "campaign" && <BreakdownTable rows={data.byCampaign} label="Campanha" />}
       {tab === "content" && <BreakdownTable rows={data.byContent} label="Criativo" />}
     </>
+  );
+}
+
+function ManagePanel({ players }: { players: VslPlayerOption[] }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set(players.filter((p) => p.included).map((p) => p.player_id)));
+
+  const shown = players.filter((p) => !q.trim() || (p.name ?? p.player_id).toLowerCase().includes(q.trim().toLowerCase()));
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function refreshList() {
+    setMsg(null);
+    start(async () => {
+      const r = await refreshVturbPlayersAction();
+      setMsg(r.ok ? `Lista atualizada — ${r.count ?? 0} VSL(s).` : r.error ?? "Falha.");
+      if (r.ok) router.refresh();
+    });
+  }
+  function save() {
+    setMsg(null);
+    start(async () => {
+      const r = await setVturbIncludedAction([...selected]);
+      setMsg(r.ok ? "Seleção salva ✓ — agora clique em Sincronizar VTurb." : r.error ?? "Falha.");
+      if (r.ok) router.refresh();
+    });
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border border-white/[.12] bg-[var(--noite-2)] p-4">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-lima">Gerenciar VSLs</p>
+        <button onClick={refreshList} disabled={pending} className="rounded-lg border border-white/[.18] px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/[.06] disabled:opacity-50">
+          {pending ? "…" : "Atualizar lista"}
+        </button>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar VSL…"
+          className="min-w-[160px] flex-1 rounded-lg border border-white/[.16] bg-transparent px-3 py-1.5 text-sm text-foreground placeholder:text-zinc-500"
+        />
+        <button onClick={save} disabled={pending} className="rounded-lg bg-lima px-4 py-1.5 text-sm font-bold text-[var(--noite)] hover:opacity-90 disabled:opacity-50">
+          Salvar seleção ({selected.size})
+        </button>
+        {msg && <span className="w-full text-xs text-zinc-300">{msg}</span>}
+      </div>
+      {players.length === 0 ? (
+        <p className="text-sm text-zinc-400">Nenhuma VSL listada. Clique em <strong>“Atualizar lista”</strong> para buscar da conta.</p>
+      ) : (
+        <ul className="grid max-h-72 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
+          {shown.map((p) => (
+            <li key={p.player_id}>
+              <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-white/[.05]">
+                <input type="checkbox" checked={selected.has(p.player_id)} onChange={() => toggle(p.player_id)} className="accent-eletrico" />
+                <span className="truncate text-foreground" title={p.name ?? p.player_id}>{p.name ?? p.player_id}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-[11px] text-zinc-400">Selecione só as VSLs relevantes — puxar poucas evita estourar o limite de requisições da API.</p>
+    </div>
   );
 }
 
