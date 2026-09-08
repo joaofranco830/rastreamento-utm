@@ -49,6 +49,7 @@ export async function getCampaignsTable(
   productIds: string[] | null,
   from: string,
   to: string,
+  limit = 20,
 ): Promise<CampaignRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("campaigns_table", {
@@ -58,6 +59,7 @@ export async function getCampaignsTable(
     p_product_ids: productIds && productIds.length > 0 ? productIds : null,
     p_from: from,
     p_to: to,
+    p_limit: limit,
   });
   if (error) throw new Error(`campaigns_table: ${error.message}`);
   return (data ?? []) as CampaignRow[];
