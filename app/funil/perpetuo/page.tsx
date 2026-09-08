@@ -29,15 +29,21 @@ const ROLE_LABELS: Record<string, string> = {
 };
 const ROLE_ORDER = ["principal", "order_bump", "upsell", "downsell", "ascension", "other"];
 
-function Card({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Card({ label, value, sub, valueClass }: { label: string; value: string; sub?: string; valueClass?: string }) {
   return (
     <div className="rounded-xl border border-white/[.1] bg-[var(--noite-2)] p-4">
       <p className="font-mono text-[11px] uppercase tracking-wider text-aco">{label}</p>
-      <p className="font-display mt-2 text-2xl text-foreground">{value}</p>
+      <p className={`font-display mt-2 text-2xl ${valueClass ?? "text-foreground"}`}>{value}</p>
       {sub && <p className="mt-1 text-xs text-zinc-400">{sub}</p>}
     </div>
   );
 }
+
+// Cores das métricas do dashboard (experimental).
+const C_GREEN = "text-[#3ddc84]";
+const C_RED = "text-[#ff5a5a]";
+const C_BLUE = "text-[#6b78ff]";
+const C_YELLOW = "text-[#f5c518]";
 
 function FunnelStep({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -71,11 +77,11 @@ export default async function DashboardPage({
   const cfg = funnel?.dashboard_config ?? null;
   const customs = cfg?.custom_metrics ?? [];
   const nodeOf: Record<string, React.ReactNode> = {
-    invested: <Card label="Investido" value={brl(s.invested)} />,
+    invested: <Card label="Investido" value={brl(s.invested)} valueClass={C_BLUE} />,
     net_revenue: <Card label="Faturamento (líq.)" value={brl(s.net_revenue)} />,
-    profit: <Card label="Lucro" value={brl(s.profit)} />,
-    roas: <Card label="ROAS" value={mult(s.roas)} />,
-    ticket_medio: <Card label="Ticket médio" value={brl(s.ticket_medio)} />,
+    profit: <Card label="Lucro" value={brl(s.profit)} valueClass={s.profit >= 0 ? C_GREEN : C_RED} />,
+    roas: <Card label="ROAS" value={mult(s.roas)} valueClass={C_GREEN} />,
+    ticket_medio: <Card label="Ticket médio" value={brl(s.ticket_medio)} valueClass={C_YELLOW} />,
     cac_total: <Card label="Custo/venda (total)" value={brl(s.cac_total)} />,
     cac_principal: <Card label="Custo/venda (principal)" value={brl(s.cac_principal)} />,
     refund_rate: <Card label="Taxa de reembolso" value={pct(s.refund_rate_count)} sub={`${pct(s.refund_rate_value)} do valor`} />,
