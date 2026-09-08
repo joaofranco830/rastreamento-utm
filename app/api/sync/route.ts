@@ -1,6 +1,6 @@
 export const runtime = "nodejs"; // service_role + token Meta -> não edge
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // sync pode levar alguns segundos
+export const maxDuration = 300; // backfill profundo (?days=400) pode levar minutos
 export const preferredRegion = "gru1"; // perto do Supabase (sa-east-1)
 
 import { NextResponse } from "next/server";
@@ -19,12 +19,26 @@ function authorized(req: Request): boolean {
   return auth === `Bearer ${secret}` || x === secret;
 }
 
+/**
+ * Janela do sync em dias. Padrão 14 (cron). Aceita `?days=N` (ou header
+ * `x-sync-days`) para um backfill profundo pontual — ex.: `?days=400` reprocessa
+ * ~13 meses e reescreve o histórico com o conjunto de campos atual (idempotente,
+ * upsert por ad_id+date). Limitado a 1..400 para não estourar a chamada.
+ */
+function resolveDays(req: Request): number {
+  const url = new URL(req.url);
+  const raw = url.searchParams.get("days") ?? req.headers.get("x-sync-days");
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return 14;
+  return Math.min(400, Math.max(1, Math.trunc(n)));
+}
+
 async function handle(req: Request): Promise<Response> {
   if (!authorized(req)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
   try {
-    const results = await runMetaSyncAll();
+    const results = await runMetaSyncAll(resolveDays(req));
     // 200 se todos passaram ou foram pulados; 500 se algum falhou de verdade.
     const anyHardFail = results.some((r) => !r.ok && !r.skipped);
     return NextResponse.json({ ok: !anyHardFail, results }, { status: anyHardFail ? 500 : 200 });
