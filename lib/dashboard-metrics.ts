@@ -48,6 +48,7 @@ export interface BlockDef {
 export const BLOCK_CATALOG: BlockDef[] = [
   { key: "revenue_by_role", label: "Faturamento por etapa" },
   { key: "products", label: "Vendas por produto e pagamento" },
+  { key: "product_payment", label: "Produto × forma de pagamento" },
   { key: "funnel", label: "Métricas do funil" },
   { key: "ascension", label: "LTV" },
   { key: "timeseries", label: "Evolução diária" },
