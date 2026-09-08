@@ -10,6 +10,7 @@ const TABS = [
   { href: "/funil/perpetuo/campanhas", label: "Campanhas" },
   { href: "/funil/perpetuo/criativos", label: "Criativos" },
   { href: "/funil/perpetuo/visual", label: "Funil (visual)" },
+  { href: "/funil/perpetuo/clientes", label: "Clientes" },
   { href: "/funil/perpetuo/configurar", label: "Configurar funil" },
 ];
 

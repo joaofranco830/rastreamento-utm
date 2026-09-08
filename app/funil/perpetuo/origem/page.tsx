@@ -4,7 +4,6 @@ import { getActiveProjectId } from "@/lib/tenant";
 import { getOrigem } from "@/lib/origem";
 import { resolveRange } from "@/lib/central";
 import { brl, inteiro, pct } from "@/lib/format";
-import CustomersTable from "../../../origem/customers-table";
 import { classLabel } from "../../../origem/labels";
 import DateButton from "../date-button";
 
@@ -21,7 +20,7 @@ export default async function OrigemPage({
 
   const sp = await searchParams;
   const { from, to } = resolveRange(sp);
-  const { overview: ov, customers } = await getOrigem(projectId, from, to);
+  const { overview: ov } = await getOrigem(projectId, from, to);
   const total = ov.total.sales || 0;
   const shareOf = (n: number) => (total > 0 ? n / total : 0);
 
@@ -94,10 +93,6 @@ export default async function OrigemPage({
         </div>
       </section>
 
-      <section className="mb-4">
-        <h2 className="mb-3 text-sm font-medium text-zinc-400">Clientes (por e-mail) — clique para o histórico</h2>
-        <CustomersTable customers={customers} />
-      </section>
     </>
   );
 }
