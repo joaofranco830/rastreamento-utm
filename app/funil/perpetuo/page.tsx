@@ -108,7 +108,12 @@ export default async function DashboardPage({
 
   // Reembolso por produto (só produtos com algum estorno no período).
   const refundRows = s.by_product.filter((p) => p.refund_count > 0 || p.refunded_value > 0);
-  const totalRefunded = s.refunded;
+  const totalRefunded = s.refunds.total.value;
+
+  // Vendas perdidas / funil do checkout.
+  const lost = s.lost;
+  const ck = lost.checkout;
+  const ckPct = (v: number) => (ck.entered > 0 ? v / ck.entered : null);
 
   // LTV: taxa de compra de bump/upsell/downsell/ascensão sobre o nº de vendas do front.
   const front = s.net_sales_principal;
@@ -240,11 +245,9 @@ export default async function DashboardPage({
     refund: (
       <section className="mb-4">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Reembolsos</h2>
-        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <Card label="Compras reembolsadas" value={inteiro(s.refunds.refunded.count)} sub={brl(s.refunds.refunded.value)} />
-          <Card label="Compras com chargeback" value={inteiro(s.refunds.chargeback.count)} sub={brl(s.refunds.chargeback.value)} />
-          <Card label="Compras canceladas" value={inteiro(s.refunds.canceled.count)} sub={brl(s.refunds.canceled.value)} />
-          <Card label="Total estornado" value={brl(s.refunded)} sub={`de ${inteiro(s.paid_count)} pagos`} />
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Card label="Compras reembolsadas" value={inteiro(s.refunds.total.count)} sub={s.refunds.chargeback.count > 0 ? `inclui ${inteiro(s.refunds.chargeback.count)} chargeback` : undefined} />
+          <Card label="Total estornado" value={brl(s.refunds.total.value)} sub={`de ${inteiro(s.paid_count)} pagos`} />
           <Card label="Taxa (compras)" value={pct(s.refund_rate_count)} />
           <Card label="Taxa (valor)" value={pct(s.refund_rate_value)} />
         </div>
@@ -274,6 +277,28 @@ export default async function DashboardPage({
             </table>
           </div>
         )}
+      </section>
+    ),
+    lost: (
+      <section className="mb-8">
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Vendas perdidas</h2>
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Card label="Compras canceladas" value={inteiro(lost.canceled.count)} sub={`${brl(lost.canceled.value)} · não aprovadas`} />
+          <Card label="Emitidos e não pagos" value={inteiro(lost.unpaid.count)} sub="pix/boleto sem pagamento" />
+          <Card label="Abandono de checkout" value={inteiro(ck.abandoned)} />
+          <Card label="Taxa de Pix não pago" value={pct(lost.pix_total > 0 ? lost.pix_unpaid / lost.pix_total : null)} sub={`${inteiro(lost.pix_unpaid)} de ${inteiro(lost.pix_total)} pix`} />
+        </div>
+
+        {/* fluxo dentro do checkout */}
+        <h3 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-aco">
+          Fluxo do checkout <span className="text-zinc-600">· {inteiro(ck.entered)} entraram{s.checkouts_source === "meta" ? " (Meta)" : ""}</span>
+        </h3>
+        <div className="flex flex-wrap gap-3">
+          <FunnelStep label="Comprou" value={pct(ckPct(ck.bought))} hint={`${inteiro(ck.bought)} compras`} />
+          <FunnelStep label="Pix/boleto não pago" value={pct(ckPct(ck.unpaid))} hint={`${inteiro(ck.unpaid)}`} />
+          <FunnelStep label="Cancelado" value={pct(ckPct(ck.canceled))} hint={`${inteiro(ck.canceled)}`} />
+          <FunnelStep label="Abandonou" value={pct(ckPct(ck.abandoned))} hint={`${inteiro(ck.abandoned)}`} />
+        </div>
       </section>
     ),
   };

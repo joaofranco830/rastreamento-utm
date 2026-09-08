@@ -52,6 +52,7 @@ export const BLOCK_CATALOG: BlockDef[] = [
   { key: "ascension", label: "LTV" },
   { key: "timeseries", label: "Evolução diária" },
   { key: "refund", label: "Detalhes de reembolso" },
+  { key: "lost", label: "Vendas perdidas" },
 ];
 
 export const BLOCK_LABEL: Record<string, string> = Object.fromEntries(
@@ -88,6 +89,7 @@ export const FIELD_GROUPS = [
   "Meta — Vídeo",
   "Vendas (Hotmart)",
   "Reembolso",
+  "Vendas perdidas",
   "Faturamento por etapa",
   "Nº de vendas por etapa",
   "Por produto",
@@ -147,15 +149,24 @@ export const FIELD_CATALOG: FieldDef[] = [
   { key: "net_sales_principal", label: "Nº de vendas (principal)", group: "Vendas (Hotmart)", format: "number" },
   { key: "paid_count", label: "Pedidos pagos", group: "Vendas (Hotmart)", format: "number" },
 
-  // Reembolso
-  { key: "refunded_count", label: "Compras reembolsadas", group: "Reembolso", format: "number" },
+  // Reembolso (reembolso + chargeback)
+  { key: "refunds_total_count", label: "Compras reembolsadas", group: "Reembolso", format: "number" },
+  { key: "refunds_total_value", label: "Total estornado", group: "Reembolso", format: "money" },
+  { key: "refunded_count", label: "Reembolsos (só refund)", group: "Reembolso", format: "number" },
   { key: "refunded_value", label: "Valor reembolsado", group: "Reembolso", format: "money" },
-  { key: "chargeback_count", label: "Compras com chargeback", group: "Reembolso", format: "number" },
+  { key: "chargeback_count", label: "Chargebacks", group: "Reembolso", format: "number" },
   { key: "chargeback_value", label: "Valor de chargeback", group: "Reembolso", format: "money" },
-  { key: "canceled_count", label: "Compras canceladas", group: "Reembolso", format: "number" },
-  { key: "canceled_value", label: "Valor cancelado", group: "Reembolso", format: "money" },
-  { key: "refunds_total_count", label: "Total de reembolsos (compras)", group: "Reembolso", format: "number" },
-  { key: "refunds_total_value", label: "Total estornado (valor)", group: "Reembolso", format: "money" },
+
+  // Vendas perdidas (tentativas não aprovadas / não pagas)
+  { key: "canceled_count", label: "Compras canceladas (não aprovadas)", group: "Vendas perdidas", format: "number" },
+  { key: "canceled_value", label: "Valor cancelado", group: "Vendas perdidas", format: "money" },
+  { key: "unpaid_count", label: "Emitidos e não pagos", group: "Vendas perdidas", format: "number" },
+  { key: "abandoned", label: "Abandono de checkout", group: "Vendas perdidas", format: "number" },
+  { key: "pix_total", label: "Pix (total)", group: "Vendas perdidas", format: "number" },
+  { key: "pix_paid", label: "Pix pagos", group: "Vendas perdidas", format: "number" },
+  { key: "pix_unpaid", label: "Pix não pagos", group: "Vendas perdidas", format: "number" },
+  { key: "pix_unpaid_rate", label: "Taxa de Pix não pago", group: "Vendas perdidas", format: "percent", derived: true },
+  { key: "pix_paid_rate", label: "Taxa de Pix pago", group: "Vendas perdidas", format: "percent", derived: true },
 
   // Faturamento por etapa (papel)
   { key: "role_rev_principal", label: "Faturamento — Principal", group: "Faturamento por etapa", format: "money" },
@@ -296,15 +307,23 @@ export function resolveField(s: CentralSummary, key: string): number | null {
     case "ascension_upsell": return s.net_sales_principal > 0 ? (s.sales_by_role.upsell ?? 0) / s.net_sales_principal : null;
     case "ascension_downsell": return s.net_sales_principal > 0 ? (s.sales_by_role.downsell ?? 0) / s.net_sales_principal : null;
     case "ascension_ascension": return s.net_sales_principal > 0 ? (s.sales_by_role.ascension ?? 0) / s.net_sales_principal : null;
-    // reembolso (quebra por status)
+    // reembolso (refund + chargeback)
     case "refunded_count": return s.refunds.refunded.count;
     case "refunded_value": return s.refunds.refunded.value;
     case "chargeback_count": return s.refunds.chargeback.count;
     case "chargeback_value": return s.refunds.chargeback.value;
-    case "canceled_count": return s.refunds.canceled.count;
-    case "canceled_value": return s.refunds.canceled.value;
-    case "refunds_total_count": return s.refunds.refunded.count + s.refunds.chargeback.count + s.refunds.canceled.count;
-    case "refunds_total_value": return s.refunded;
+    case "refunds_total_count": return s.refunds.total.count;
+    case "refunds_total_value": return s.refunds.total.value;
+    // vendas perdidas
+    case "canceled_count": return s.lost.canceled.count;
+    case "canceled_value": return s.lost.canceled.value;
+    case "unpaid_count": return s.lost.unpaid.count;
+    case "abandoned": return s.lost.checkout.abandoned;
+    case "pix_total": return s.lost.pix_total;
+    case "pix_paid": return s.lost.pix_paid;
+    case "pix_unpaid": return s.lost.pix_unpaid;
+    case "pix_unpaid_rate": return s.lost.pix_total > 0 ? s.lost.pix_unpaid / s.lost.pix_total : null;
+    case "pix_paid_rate": return s.lost.pix_total > 0 ? s.lost.pix_paid / s.lost.pix_total : null;
   }
   if (key.startsWith("role_rev_")) return s.revenue_by_role[key.slice(9)] ?? 0;
   if (key.startsWith("role_sales_")) return s.sales_by_role[key.slice(11)] ?? 0;
