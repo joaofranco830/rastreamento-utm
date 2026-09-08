@@ -30,7 +30,16 @@ export default function VslsView({ data, hasKey }: { data: VslData; hasKey: bool
     setMsg(null);
     start(async () => {
       const r = await syncVturbAction();
-      setMsg(r.ok ? `Sincronizado ✓ — ${r.players ?? 0} vídeo(s), ${inteiro(r.rows ?? 0)} linhas.` : r.error ?? "Falha.");
+      if (!r.ok) {
+        setMsg(r.error ?? "Falha.");
+      } else {
+        const parts = [`${r.players ?? 0} vídeo(s)`, `${inteiro(r.rows ?? 0)} linhas`];
+        if (r.withData != null) parts.push(`${r.withData} com dados`);
+        if (r.errors) parts.push(`${r.errors} erro(s)`);
+        let m = `Sincronizado ✓ — ${parts.join(", ")}.`;
+        if ((r.rows ?? 0) === 0 && r.firstError) m += ` Motivo: ${r.firstError}`;
+        setMsg(m);
+      }
       if (r.ok) router.refresh();
     });
   }
@@ -54,9 +63,9 @@ export default function VslsView({ data, hasKey }: { data: VslData; hasKey: bool
         <button
           onClick={sync}
           disabled={pending}
-          className="rounded-lg border border-white/[.18] px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-white/[.06] disabled:opacity-50"
+          className="rounded-lg bg-[#ff5a5a] px-4 py-2 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {pending ? "Sincronizando…" : "Sincronizar VTurb"}
+          {pending ? "Sincronizando…" : "⟳ Sincronizar VTurb"}
         </button>
         {data.lastSync && (
           <span className="text-xs text-zinc-400">Último sync: {new Date(data.lastSync).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>

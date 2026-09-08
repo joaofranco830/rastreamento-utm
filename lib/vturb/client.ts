@@ -94,10 +94,20 @@ export interface VturbTrafficRow {
 
 // ---- Endpoints ----
 
+/** Coage a resposta a um array de linhas; lança erro claro se a forma for inesperada. */
+function asRows<T>(data: unknown, endpoint: string): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object" && Array.isArray((data as { data?: unknown }).data)) {
+    return (data as { data: T[] }).data;
+  }
+  const shape = data == null ? String(data) : typeof data === "object" ? `{${Object.keys(data as object).slice(0, 6).join(",")}}` : typeof data;
+  throw new VturbError(`${endpoint}: resposta inesperada ${shape}`);
+}
+
 /** Lista todos os players (vídeos/VSLs) da conta. */
 export async function listPlayers(token: string): Promise<VturbPlayer[]> {
   const data = await vturbFetch(token, "/players/list", { method: "GET" });
-  return Array.isArray(data) ? (data as VturbPlayer[]) : [];
+  return asRows<VturbPlayer>(data, "players/list");
 }
 
 /** Estatísticas totais do player por dia (sem agrupar por UTM). */
@@ -109,7 +119,7 @@ export async function sessionStatsByDay(
     method: "POST",
     body: { timezone: TZ, ...p },
   });
-  return Array.isArray(data) ? (data as VturbTrafficRow[]) : [];
+  return asRows<VturbTrafficRow>(data, "sessions/stats_by_day");
 }
 
 /** Estatísticas do player agrupadas por UTM (query_key) e por dia. */
@@ -125,5 +135,5 @@ export async function trafficOriginStatsByDay(
       ...p,
     },
   });
-  return Array.isArray(data) ? (data as VturbTrafficRow[]) : [];
+  return asRows<VturbTrafficRow>(data, "traffic_origin/stats_by_day");
 }

@@ -20,7 +20,25 @@ export interface VturbSyncResult {
   skipped?: string;
   players?: number;
   rows?: number;
+  withData?: number;
+  errors?: number;
+  firstError?: string;
   error?: string;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Executa uma chamada; em 429 (rate limit) espera e tenta 1x mais. */
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    if (e instanceof VturbError && e.status === 429) {
+      await sleep(4000);
+      return await fn();
+    }
+    throw e;
+  }
 }
 
 function rowToRecord(projectId: number, playerId: string, dimension: string, value: string, r: VturbTrafficRow) {
@@ -79,6 +97,14 @@ export async function runVturbSync(projectId: number, sinceDays = 120): Promise<
   }
 
   let rows = 0;
+  let errors = 0;
+  let withData = 0;
+  let firstError: string | null = null;
+  const noteError = (e: unknown) => {
+    errors++;
+    if (!firstError) firstError = e instanceof VturbError ? `${e.status ?? ""} ${e.message}`.trim() : e instanceof Error ? e.message : String(e);
+  };
+
   const upsert = async (records: ReturnType<typeof rowToRecord>[]) => {
     for (let i = 0; i < records.length; i += 500) {
       const chunk = records.slice(i, i + 500);
@@ -89,32 +115,36 @@ export async function runVturbSync(projectId: number, sinceDays = 120): Promise<
   };
 
   for (const p of players) {
-    const vd = p.duration || undefined;
+    let got = 0;
     // Totais do vídeo por dia.
     try {
-      const totals = await sessionStatsByDay(token, { player_id: p.id, start_date, end_date, video_duration: vd });
-      await upsert(totals.filter((r) => r.date_key).map((r) => rowToRecord(projectId, p.id, "total", "", r)));
-    } catch {
-      /* player sem dados no período — segue */
+      const totals = await withRetry(() => sessionStatsByDay(token, { player_id: p.id, start_date, end_date, video_duration: p.duration || undefined }));
+      const recs = totals.filter((r) => r.date_key).map((r) => rowToRecord(projectId, p.id, "total", "", r));
+      await upsert(recs);
+      got += recs.length;
+    } catch (e) {
+      noteError(e);
     }
     // Breakdown por UTM.
     try {
-      const byUtm = await trafficOriginStatsByDay(token, {
-        player_id: p.id,
-        start_date,
-        end_date,
-        video_duration: p.duration || 1,
-        query_keys: ["utm_campaign", "utm_content", "utm_source", "utm_medium"],
-      });
-      await upsert(
-        byUtm
-          .filter((r) => r.date_key && r.query_key)
-          .map((r) => rowToRecord(projectId, p.id, r.query_key, r.grouped_field ?? "", r)),
+      const byUtm = await withRetry(() =>
+        trafficOriginStatsByDay(token, {
+          player_id: p.id,
+          start_date,
+          end_date,
+          video_duration: p.duration || 1,
+          query_keys: ["utm_campaign", "utm_content", "utm_source", "utm_medium"],
+        }),
       );
-    } catch {
-      /* segue */
+      const recs = byUtm.filter((r) => r.date_key && r.query_key).map((r) => rowToRecord(projectId, p.id, r.query_key, r.grouped_field ?? "", r));
+      await upsert(recs);
+      got += recs.length;
+    } catch (e) {
+      noteError(e);
     }
+    if (got > 0) withData++;
+    await sleep(300); // respeita o rate limit (≈2 chamadas/300ms)
   }
 
-  return { ok: true, players: players.length, rows };
+  return { ok: true, players: players.length, rows, withData, errors, firstError: firstError ?? undefined };
 }
