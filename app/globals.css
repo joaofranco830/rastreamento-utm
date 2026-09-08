@@ -19,7 +19,7 @@
   --eletrico-cl: #8a93ff;
   --lima: #d6ff45;
   --lima-esc: #b4dc22;
-  --aco: #7e7e8c;
+  --aco: #a6a6b4; /* rótulos/labels — clareado p/ contraste sobre fundo escuro */
 }
 
 @theme inline {
