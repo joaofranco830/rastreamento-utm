@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { saveHottokAction, saveMetaAction } from "./integracoes-actions";
+import { saveHottokAction, saveMetaAction, saveVturbAction } from "./integracoes-actions";
 
 function Configured({ on }: { on: boolean }) {
   return (
@@ -36,6 +36,48 @@ export function HottokForm({ configured }: { configured: boolean }) {
           onClick={() =>
             start(async () => {
               const r = await saveHottokAction(value);
+              setMsg(r.ok ? "Salvo ✓" : r.error ?? "Falha.");
+              if (r.ok) {
+                setValue("");
+                router.refresh();
+              }
+            })
+          }
+          disabled={pending}
+          className="shrink-0 rounded-lg bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+        >
+          Salvar
+        </button>
+      </div>
+      {msg && <span className="text-xs text-zinc-400">{msg}</span>}
+    </div>
+  );
+}
+
+export function VturbForm({ configured }: { configured: boolean }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [value, setValue] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-medium">API key (Analytics)</span>
+        <Configured on={configured} />
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="password"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={configured ? "•••••••• (substituir)" : "cole a API key do VTurb"}
+          className="min-w-0 flex-1 rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm dark:border-white/[.18]"
+        />
+        <button
+          onClick={() =>
+            start(async () => {
+              const r = await saveVturbAction(value);
               setMsg(r.ok ? "Salvo ✓" : r.error ?? "Falha.");
               if (r.ok) {
                 setValue("");

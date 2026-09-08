@@ -8,6 +8,7 @@ const TABS = [
   { href: "/configuracoes/pixel", label: "Pixel do Projeto" },
   { href: "/configuracoes/hotmart", label: "Integração Hotmart" },
   { href: "/configuracoes/meta", label: "Integração Meta" },
+  { href: "/configuracoes/vturb", label: "Integração VTurb" },
   { href: "/configuracoes/importar", label: "Importação de vendas antigas" },
   { href: "/configuracoes/utm", label: "Construtor de Links (UTMs)" },
 ];
