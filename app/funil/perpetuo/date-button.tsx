@@ -90,7 +90,7 @@ function Calendar({ month, start, end, onPick }: { month: string; start: string 
   return (
     <div>
       <p className="mb-2 text-center text-sm font-medium capitalize text-foreground">{MONTHS[mon]} {year}</p>
-      <div className="grid grid-cols-7 gap-y-1 text-center text-[11px] text-zinc-500">
+      <div className="grid grid-cols-7 gap-y-1 text-center text-[11px] text-zinc-400">
         {WD.map((w) => <div key={w} className="py-1">{w}</div>)}
         {cells.map((c, i) => {
           if (!c) return <div key={i} />;
@@ -187,7 +187,7 @@ export default function DateButton() {
       >
         <span aria-hidden>📅</span>
         <span>{label}</span>
-        <span className="text-zinc-500" aria-hidden>▾</span>
+        <span className="text-zinc-400" aria-hidden>▾</span>
       </button>
 
       {open && (

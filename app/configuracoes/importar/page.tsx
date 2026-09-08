@@ -22,7 +22,7 @@ export default async function ImportarPage() {
   return (
     <section>
       <h2 className="mb-1 text-lg font-medium">Importação de vendas antigas (CSV)</h2>
-      <p className="mb-8 text-sm text-zinc-500">
+      <p className="mb-8 text-sm text-zinc-400">
         Preenche o histórico que o webhook não tem. Faturamento e nº de vendas continuam vindo do líquido (dedup por
         transação).
       </p>
@@ -31,12 +31,12 @@ export default async function ImportarPage() {
 
       {batches && batches.length > 0 && (
         <div className="mt-10">
-          <h3 className="mb-3 text-sm font-medium text-zinc-500">Importações recentes</h3>
+          <h3 className="mb-3 text-sm font-medium text-zinc-400">Importações recentes</h3>
           <div className="divide-y divide-black/[.06] rounded-xl border border-black/[.08] dark:divide-white/[.08] dark:border-white/[.12]">
             {batches.map((b) => (
               <div key={b.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
                 <span className="min-w-0 truncate font-mono text-xs">{b.filename ?? "—"}</span>
-                <span className="shrink-0 text-zinc-500">
+                <span className="shrink-0 text-zinc-400">
                   {b.row_count} novas · {new Date(b.created_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                 </span>
               </div>

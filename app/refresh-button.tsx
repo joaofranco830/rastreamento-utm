@@ -27,7 +27,7 @@ export default function RefreshButton() {
       >
         {pending ? "Atualizando…" : "Atualizar Meta"}
       </button>
-      {msg && <span className="text-xs text-zinc-500">{msg}</span>}
+      {msg && <span className="text-xs text-zinc-400">{msg}</span>}
     </div>
   );
 }

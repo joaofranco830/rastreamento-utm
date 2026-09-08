@@ -104,7 +104,7 @@ export default function TimeseriesChart({ data }: { data: Point[] }) {
 
   const { pts, gran } = useMemo(() => bucketize(data), [data]);
 
-  if (!data.length) return <p className="text-sm text-zinc-500">Sem dados no período.</p>;
+  if (!data.length) return <p className="text-sm text-zinc-400">Sem dados no período.</p>;
 
   const n = pts.length;
   const moneyVals = pts.flatMap((d) => [Number(d.invested), Number(d.net_revenue), Number(d.profit)]);
@@ -144,7 +144,7 @@ export default function TimeseriesChart({ data }: { data: Point[] }) {
 
   return (
     <div className="w-full overflow-x-auto">
-      <div className="mb-2 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+      <div className="mb-2 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
         {SERIES.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2 w-3 rounded-sm" style={{ background: s.color }} />
@@ -155,7 +155,7 @@ export default function TimeseriesChart({ data }: { data: Point[] }) {
       </div>
 
       <div ref={wrapRef} className="relative" style={{ minWidth: 600 }} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full text-zinc-500">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full text-zinc-400">
           {grid.map((g, i) => (
             <g key={i}>
               <line x1={PADL} x2={W - PADR} y1={y(g)} y2={y(g)} stroke="currentColor" strokeOpacity="0.1" />

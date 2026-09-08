@@ -54,7 +54,7 @@ export default async function DashboardV1({
       <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard v1 (antigo)</h1>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-400">
             Visão da conta inteira (sem filtro de produto/campanha) · Período {d.from} a {d.to} · Meta {freshness(d.lastSyncAt)}
           </p>
         </div>
@@ -100,7 +100,7 @@ export default async function DashboardV1({
       )}
 
       {!s ? (
-        <p className="text-sm text-zinc-500">Sem dados para o período.</p>
+        <p className="text-sm text-zinc-400">Sem dados para o período.</p>
       ) : (
         <div className="space-y-8">
           {s.orders_no_date > 0 && (
@@ -144,7 +144,7 @@ export default async function DashboardV1({
           <Section title="Por criativo">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-zinc-500">
+                <thead className="text-left text-zinc-400">
                   <tr className="border-b border-black/[.08] dark:border-white/[.1]">
                     <th className="py-2 font-medium">Criativo</th>
                     <th className="py-2 text-right font-medium">Investido</th>
@@ -155,7 +155,7 @@ export default async function DashboardV1({
                 </thead>
                 <tbody>
                   {d.creatives.length === 0 ? (
-                    <tr><td colSpan={5} className="py-3 text-zinc-500">Sem dados.</td></tr>
+                    <tr><td colSpan={5} className="py-3 text-zinc-400">Sem dados.</td></tr>
                   ) : (
                     d.creatives.map((c, i) => (
                       <tr key={i} className="border-b border-black/[.04] dark:border-white/[.06]">
@@ -176,7 +176,7 @@ export default async function DashboardV1({
           <Section title="Por campanha">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-zinc-500">
+                <thead className="text-left text-zinc-400">
                   <tr className="border-b border-black/[.08] dark:border-white/[.1]">
                     <th className="py-2 font-medium">Campanha</th>
                     <th className="py-2 text-right font-medium">Investido</th>
@@ -187,7 +187,7 @@ export default async function DashboardV1({
                 </thead>
                 <tbody>
                   {d.campaigns.length === 0 ? (
-                    <tr><td colSpan={5} className="py-3 text-zinc-500">Sem dados.</td></tr>
+                    <tr><td colSpan={5} className="py-3 text-zinc-400">Sem dados.</td></tr>
                   ) : (
                     d.campaigns.map((c, i) => (
                       <tr key={i} className="border-b border-black/[.04] dark:border-white/[.06]">
@@ -212,7 +212,7 @@ export default async function DashboardV1({
 function Card({ title, value, hint, accent }: { title: string; value: string; hint?: string; accent?: boolean }) {
   return (
     <div className={`rounded-2xl border p-5 ${accent ? "border-transparent bg-foreground text-background" : "border-black/[.08] bg-white dark:border-white/[.145] dark:bg-zinc-950"}`}>
-      <p className={`text-xs ${accent ? "opacity-80" : "text-zinc-500"}`}>{title}</p>
+      <p className={`text-xs ${accent ? "opacity-80" : "text-zinc-400"}`}>{title}</p>
       <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
       {hint && <p className={`mt-1 text-xs ${accent ? "opacity-70" : "text-zinc-400"}`}>{hint}</p>}
     </div>
@@ -231,7 +231,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Mini({ title, value, hint }: { title: string; value: string; hint?: string }) {
   return (
     <div>
-      <p className="text-xs text-zinc-500">{title}</p>
+      <p className="text-xs text-zinc-400">{title}</p>
       <p className="mt-1 text-xl font-semibold">{value}</p>
       {hint && <p className="text-xs text-zinc-400">{hint}</p>}
     </div>

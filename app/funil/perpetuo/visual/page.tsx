@@ -35,7 +35,7 @@ export default async function VisualPage({
         <h2 className="font-display text-lg text-foreground">FUNIL (VISUAL)</h2>
         <DateButton />
       </div>
-      <p className="mb-6 text-sm text-zinc-500">
+      <p className="mb-6 text-sm text-zinc-400">
         Etapas do funil com as métricas do período. O rastreio é parcial — vendas vêm do webhook (completo).
       </p>
 
@@ -63,19 +63,19 @@ export default async function VisualPage({
 
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-          <p className="text-xs text-zinc-500">Investido</p>
+          <p className="text-xs text-zinc-400">Investido</p>
           <p className="mt-1 text-lg font-semibold">{brl(s.invested)}</p>
         </div>
         <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-          <p className="text-xs text-zinc-500">Faturamento (líq.)</p>
+          <p className="text-xs text-zinc-400">Faturamento (líq.)</p>
           <p className="mt-1 text-lg font-semibold">{brl(s.net_revenue)}</p>
         </div>
         <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-          <p className="text-xs text-zinc-500">ROAS</p>
+          <p className="text-xs text-zinc-400">ROAS</p>
           <p className="mt-1 text-lg font-semibold">{s.roas ? `${s.roas}x` : "—"}</p>
         </div>
         <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-          <p className="text-xs text-zinc-500">Conv. funil</p>
+          <p className="text-xs text-zinc-400">Conv. funil</p>
           <p className="mt-1 text-lg font-semibold">{pct(s.funnel.funnel_conv)}</p>
         </div>
       </div>

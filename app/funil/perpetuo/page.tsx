@@ -179,7 +179,7 @@ export default async function DashboardPage({
           <FunnelStep label="Conv. funil (front)" value={pct(s.funnel.funnel_conv)} />
         </div>
         {(s.pageviews_source === "meta" || s.checkouts_source === "meta") && (
-          <p className="mt-2 text-[11px] text-zinc-500">
+          <p className="mt-2 text-[11px] text-zinc-400">
             Sem dados do nosso pixel no período — page views/checkouts vindos do Meta (LPV / checkout iniciado).
           </p>
         )}

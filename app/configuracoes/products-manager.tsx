@@ -43,7 +43,7 @@ export default function ProductsManager({ products: initial }: { products: Produ
 
   return (
     <div className="overflow-hidden rounded-xl border border-black/[.08] dark:border-white/[.12]">
-      <div className="flex items-center justify-between border-b border-black/[.06] bg-black/[.02] px-4 py-2.5 text-xs text-zinc-500 dark:border-white/[.08] dark:bg-white/[.03]">
+      <div className="flex items-center justify-between border-b border-black/[.06] bg-black/[.02] px-4 py-2.5 text-xs text-zinc-400 dark:border-white/[.08] dark:bg-white/[.03]">
         <span>{products.length} produtos</span>
         <span>
           {includedCount} considerado{includedCount === 1 ? "" : "s"} no dashboard

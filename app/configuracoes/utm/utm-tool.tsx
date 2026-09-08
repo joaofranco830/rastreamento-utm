@@ -114,7 +114,7 @@ export default function UtmTool({
     <div className="flex flex-col gap-10">
       <div>
         <h1 className="mb-1 text-xl font-semibold tracking-tight">Construtor de UTMs</h1>
-        <p className="text-sm text-zinc-500">Gere links rastreados (pago/orgânico), edite e salve tabelas reabríveis.</p>
+        <p className="text-sm text-zinc-400">Gere links rastreados (pago/orgânico), edite e salve tabelas reabríveis.</p>
       </div>
 
       {/* Builder */}
@@ -161,7 +161,7 @@ export default function UtmTool({
                 <CopyField value={l.full_url} />
               </div>
             ))}
-            <button onClick={addCustom} className="self-start text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">+ adicionar variação</button>
+            <button onClick={addCustom} className="self-start text-sm text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200">+ adicionar variação</button>
           </div>
         )}
 
@@ -179,7 +179,7 @@ export default function UtmTool({
             {editingId && (
               <button onClick={reset} className="rounded-lg border border-black/[.12] px-3 py-2 text-sm dark:border-white/[.18]">Novo</button>
             )}
-            {msg && <span className="text-sm text-zinc-500">{msg}</span>}
+            {msg && <span className="text-sm text-zinc-400">{msg}</span>}
           </div>
         )}
       </section>
@@ -187,7 +187,7 @@ export default function UtmTool({
       {/* Tabelas salvas */}
       {savedSets.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-medium text-zinc-500">Tabelas salvas</h2>
+          <h2 className="mb-3 text-sm font-medium text-zinc-400">Tabelas salvas</h2>
           <div className="flex flex-col divide-y divide-black/[.06] rounded-xl border border-black/[.08] dark:divide-white/[.08] dark:border-white/[.12]">
             {savedSets.map((s) => (
               <div key={s.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
@@ -204,7 +204,7 @@ export default function UtmTool({
       {/* Verificador de pixel */}
       <section className="flex flex-col gap-3 border-t border-black/[.06] pt-8 dark:border-white/[.08]">
         <h2 className="text-lg font-medium">Verificador de pixel</h2>
-        <p className="text-sm text-zinc-500">Informe a URL de uma página do funil — checamos se o pixel está no HTML servido.</p>
+        <p className="text-sm text-zinc-400">Informe a URL de uma página do funil — checamos se o pixel está no HTML servido.</p>
         <div className="flex gap-2">
           <input
             value={verifyUrl}

@@ -26,13 +26,13 @@ export default async function ConfigurarFunilPage() {
     <div className="max-w-2xl space-y-10">
       <div>
         <h2 className="mb-1 text-base font-medium">Configurar funil</h2>
-        <p className="text-sm text-zinc-500">O que este funil considera: produtos, tag de campanha e contas de anúncio.</p>
+        <p className="text-sm text-zinc-400">O que este funil considera: produtos, tag de campanha e contas de anúncio.</p>
       </div>
 
       {/* Contas de anúncio deste funil */}
       <section>
         <h3 className="mb-1 text-sm font-medium">Contas de anúncio no dashboard</h3>
-        <p className="mb-4 text-sm text-zinc-500">
+        <p className="mb-4 text-sm text-zinc-400">
           Escolha quais contas (já conectadas no projeto) entram no investido/ROAS deste funil.
         </p>
         <AccountsFilter
@@ -44,7 +44,7 @@ export default async function ConfigurarFunilPage() {
       {/* Produtos no dashboard */}
       <section>
         <h3 className="mb-1 text-sm font-medium">Produtos no dashboard</h3>
-        <p className="mb-4 text-sm text-zinc-500">
+        <p className="mb-4 text-sm text-zinc-400">
           Marque os produtos que quer considerar e defina o papel de cada um. As mudanças salvam sozinhas.
         </p>
         <ProductsManager products={products} />
@@ -53,7 +53,7 @@ export default async function ConfigurarFunilPage() {
       {/* Tag de campanha */}
       <section>
         <h3 className="mb-1 text-sm font-medium">Tag de campanha (filtro do investido)</h3>
-        <p className="mb-4 text-sm text-zinc-500">Define quais campanhas do Meta entram no &quot;investido&quot; / ROAS.</p>
+        <p className="mb-4 text-sm text-zinc-400">Define quais campanhas do Meta entram no &quot;investido&quot; / ROAS.</p>
         <CampaignTagsForm initialTags={config.campaign_name_tags} />
       </section>
     </div>

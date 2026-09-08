@@ -36,7 +36,7 @@ export function SyncHistory() {
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">
-      <span className="text-xs text-zinc-500">Puxar histórico:</span>
+      <span className="text-xs text-zinc-400">Puxar histórico:</span>
       <select
         value={days}
         onChange={(e) => setDays(Number(e.target.value))}
@@ -56,7 +56,7 @@ export function SyncHistory() {
       >
         {pending ? "Sincronizando…" : "Sincronizar"}
       </button>
-      {msg && <span className="w-full text-xs text-zinc-500">{msg}</span>}
+      {msg && <span className="w-full text-xs text-zinc-400">{msg}</span>}
     </div>
   );
 }

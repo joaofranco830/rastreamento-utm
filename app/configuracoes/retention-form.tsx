@@ -37,9 +37,9 @@ export default function RetentionForm({ initialDays }: { initialDays: number }) 
           onChange={(e) => setDays(e.target.value)}
           className="w-24 rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none focus:border-foreground dark:border-white/[.2]"
         />
-        <span className="text-sm text-zinc-500">dias</span>
+        <span className="text-sm text-zinc-400">dias</span>
       </div>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-400">
         Janela de retenção dos <b>eventos brutos</b> de navegação. Vendas e os agregados diários{" "}
         <b>nunca</b> são apagados — o gráfico temporal de meses continua inteiro. A poda de fato só
         liga na Fase V2-7.
@@ -53,7 +53,7 @@ export default function RetentionForm({ initialDays }: { initialDays: number }) 
           {pending ? "Salvando…" : "Salvar retenção"}
         </button>
         {!valid && <span className="text-xs text-amber-600">use um número de 1 a 3650</span>}
-        {valid && msg && <span className="text-xs text-zinc-500">{msg}</span>}
+        {valid && msg && <span className="text-xs text-zinc-400">{msg}</span>}
       </div>
     </div>
   );
