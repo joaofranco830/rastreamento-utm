@@ -24,6 +24,25 @@ export async function saveHottokAction(value: string): Promise<{ ok: boolean; er
   return { ok: true };
 }
 
+/** Salva a API key do VTurb Analytics do projeto no cofre (cifrada). Só admin/owner. */
+export async function saveVturbAction(apiKey: string): Promise<{ ok: boolean; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner pode salvar credenciais." };
+  }
+  if (!apiKey.trim()) return { ok: false, error: "Informe a API key do VTurb." };
+  try {
+    await setProjectCredential(projectId, "vturb", "api_key", apiKey.trim());
+  } catch {
+    return { ok: false, error: "Falha ao cifrar/salvar (verifique a chave do cofre)." };
+  }
+  revalidatePath("/configuracoes");
+  return { ok: true };
+}
+
 /** Salva token + conta do Meta do projeto no cofre. Só admin/owner. (INT-02) */
 export async function saveMetaAction(token: string, accountId: string): Promise<{ ok: boolean; error?: string }> {
   const projectId = await getActiveProjectId();

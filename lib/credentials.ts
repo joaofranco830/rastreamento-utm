@@ -8,8 +8,8 @@ import { encryptSecret, decryptSecret } from "@/lib/crypto";
  * RPCs server-only. Leitura só em sync/webhook/admin (nunca no dashboard).
  */
 
-export type Provider = "meta" | "hotmart";
-export type Kind = "token" | "hottok" | "account_id";
+export type Provider = "meta" | "hotmart" | "vturb";
+export type Kind = "token" | "hottok" | "account_id" | "api_key";
 
 export async function setProjectCredential(
   projectId: number,
