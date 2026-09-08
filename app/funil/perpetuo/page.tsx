@@ -8,6 +8,7 @@ import TimeseriesChart from "../../central/timeseries-chart";
 import DateButton from "./date-button";
 import MetricsConfig from "./metrics-config";
 import SalesTables from "./sales-tables";
+import ProductPaymentMatrix from "./product-payment-matrix";
 import {
   METRIC_CATALOG,
   allFields,
@@ -84,7 +85,7 @@ export default async function DashboardPage({
     ticket_medio: <Card label="Ticket médio" value={brl(s.ticket_medio)} valueClass={C_YELLOW} />,
     cac_total: <Card label="Custo/venda (total)" value={brl(s.cac_total)} />,
     cac_principal: <Card label="Custo/venda (principal)" value={brl(s.cac_principal)} />,
-    refund_rate: <Card label="Taxa de reembolso" value={pct(s.refund_rate_count)} sub={`${pct(s.refund_rate_value)} do valor`} />,
+    refund_rate: <Card label="Taxa de reembolso" value={pct(s.refund_rate_count)} sub={`${pct(s.refund_rate_value)} do valor`} valueClass={C_RED} />,
     net_sales: <Card label="Nº vendas (total)" value={inteiro(s.net_sales)} />,
     net_sales_principal: <Card label="Nº vendas (principal)" value={inteiro(s.net_sales_principal)} />,
   };
@@ -152,6 +153,12 @@ export default async function DashboardPage({
       <section className="mb-8">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Vendas por produto e pagamento</h2>
         <SalesTables products={s.by_product} payments={s.by_payment} />
+      </section>
+    ),
+    product_payment: (
+      <section className="mb-8">
+        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Produto × forma de pagamento</h2>
+        <ProductPaymentMatrix cells={d.productPayment} />
       </section>
     ),
     funnel: (
@@ -246,10 +253,10 @@ export default async function DashboardPage({
       <section className="mb-4">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Reembolsos</h2>
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Card label="Compras reembolsadas" value={inteiro(s.refunds.total.count)} sub={s.refunds.chargeback.count > 0 ? `inclui ${inteiro(s.refunds.chargeback.count)} chargeback` : undefined} />
-          <Card label="Total estornado" value={brl(s.refunds.total.value)} sub={`de ${inteiro(s.paid_count)} pagos`} />
-          <Card label="Taxa (compras)" value={pct(s.refund_rate_count)} />
-          <Card label="Taxa (valor)" value={pct(s.refund_rate_value)} />
+          <Card label="Compras reembolsadas" value={inteiro(s.refunds.total.count)} sub={s.refunds.chargeback.count > 0 ? `inclui ${inteiro(s.refunds.chargeback.count)} chargeback` : undefined} valueClass={C_RED} />
+          <Card label="Total estornado" value={brl(s.refunds.total.value)} sub={`de ${inteiro(s.paid_count)} pagos`} valueClass={C_RED} />
+          <Card label="Taxa de reembolso (compras)" value={pct(s.refund_rate_count)} valueClass={C_RED} />
+          <Card label="Taxa de reembolso (valor)" value={pct(s.refund_rate_value)} valueClass={C_RED} />
         </div>
         {refundRows.length > 0 && (
           <div className="overflow-x-auto rounded-xl border border-white/[.1] bg-[var(--noite-2)]">
@@ -269,7 +276,7 @@ export default async function DashboardPage({
                     <td className="px-3 py-2 text-foreground">{r.name}</td>
                     <td className="px-3 py-2 text-right text-foreground">{inteiro(r.refund_count)}</td>
                     <td className="px-3 py-2 text-right text-zinc-400">{pct(r.paid > 0 ? r.refund_count / r.paid : 0)}</td>
-                    <td className="px-3 py-2 text-right font-display text-foreground">{brl(r.refunded_value)}</td>
+                    <td className={`px-3 py-2 text-right font-display ${C_RED}`}>{brl(r.refunded_value)}</td>
                     <td className="px-3 py-2 text-right text-zinc-400">{pct(totalRefunded > 0 ? r.refunded_value / totalRefunded : 0)}</td>
                   </tr>
                 ))}
@@ -283,10 +290,10 @@ export default async function DashboardPage({
       <section className="mb-8">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Vendas perdidas</h2>
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Card label="Compras canceladas" value={inteiro(lost.canceled.count)} sub={`${brl(lost.canceled.value)} · não aprovadas`} />
-          <Card label="Emitidos e não pagos" value={inteiro(lost.unpaid.count)} sub="pix/boleto sem pagamento" />
-          <Card label="Abandono de checkout" value={inteiro(ck.abandoned)} />
-          <Card label="Taxa de Pix não pago" value={pct(lost.pix_total > 0 ? lost.pix_unpaid / lost.pix_total : null)} sub={`${inteiro(lost.pix_unpaid)} de ${inteiro(lost.pix_total)} pix`} />
+          <Card label="Compras canceladas" value={inteiro(lost.canceled.count)} sub={`${brl(lost.canceled.value)} · não aprovadas`} valueClass={C_RED} />
+          <Card label="Emitidos e não pagos" value={inteiro(lost.unpaid.count)} sub="pix/boleto sem pagamento" valueClass={C_RED} />
+          <Card label="Abandono de checkout" value={inteiro(ck.abandoned)} valueClass={C_RED} />
+          <Card label="Taxa de Pix não pago" value={pct(lost.pix_total > 0 ? lost.pix_unpaid / lost.pix_total : null)} sub={`${inteiro(lost.pix_unpaid)} de ${inteiro(lost.pix_total)} pix`} valueClass={C_RED} />
         </div>
 
         {/* fluxo dentro do checkout */}

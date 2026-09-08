@@ -8,6 +8,7 @@
 :root {
   /* base dark-first */
   --background: #0e0e14; /* Noite */
+  --noite: #0e0e14; /* alias de Noite — usado como texto escuro sobre bg-lima */
   --foreground: #f1f1f4; /* Branco */
   /* superfícies */
   --noite-2: #16161f;

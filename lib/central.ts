@@ -24,6 +24,16 @@ export interface PaymentBreakdown {
   net_sales: number;
 }
 
+/** Célula do cruzamento produto × forma de pagamento. */
+export interface ProductPaymentCell {
+  product_id: string;
+  name: string;
+  role: string;
+  payment_type: string;
+  net_revenue: number;
+  net_sales: number;
+}
+
 export interface RefundBucket {
   count: number;
   value: number;
@@ -127,6 +137,7 @@ export interface CentralData {
   summary: CentralSummary;
   series: TimeseriesPoint[];
   scope: CentralScope;
+  productPayment: ProductPaymentCell[];
 }
 
 /** Data no fuso do negócio (America/Sao_Paulo), YYYY-MM-DD, com offset em dias. */
@@ -162,14 +173,16 @@ export async function getCentral(
   const supabase = await createClient();
   // Vazio/ausente = todas as contas; senão, filtra o investido/Meta por conta.
   const p_ad_accounts = adAccounts && adAccounts.length > 0 ? adAccounts : null;
-  const [s, t, prods, cfg] = await Promise.all([
+  const [s, t, pp, prods, cfg] = await Promise.all([
     supabase.rpc("central_summary", { p_project_id: projectId, p_from: from, p_to: to, p_ad_accounts }),
     supabase.rpc("central_timeseries", { p_project_id: projectId, p_from: from, p_to: to, p_ad_accounts }),
+    supabase.rpc("central_product_payment", { p_project_id: projectId, p_from: from, p_to: to }),
     supabase.from("products").select("included").eq("project_id", projectId),
     supabase.from("tracking_config").select("campaign_name_tags").eq("project_id", projectId).maybeSingle(),
   ]);
   if (s.error) throw new Error(`central_summary: ${s.error.message}`);
   if (t.error) throw new Error(`central_timeseries: ${t.error.message}`);
+  if (pp.error) throw new Error(`central_product_payment: ${pp.error.message}`);
 
   const products = (prods.data ?? []) as { included: boolean }[];
   return {
@@ -177,6 +190,7 @@ export async function getCentral(
     to,
     summary: s.data as CentralSummary,
     series: (t.data ?? []) as TimeseriesPoint[],
+    productPayment: (pp.data ?? []) as ProductPaymentCell[],
     scope: {
       included_products: products.filter((p) => p.included).length,
       total_products: products.length,
