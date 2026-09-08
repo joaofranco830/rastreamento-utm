@@ -32,7 +32,16 @@ export interface RefundBucket {
 export interface RefundBreakdown {
   refunded: RefundBucket;
   chargeback: RefundBucket;
+  total: RefundBucket;
+}
+
+export interface LostSummary {
   canceled: RefundBucket;
+  unpaid: RefundBucket;
+  pix_total: number;
+  pix_paid: number;
+  pix_unpaid: number;
+  checkout: { entered: number; bought: number; unpaid: number; canceled: number; abandoned: number };
 }
 
 export interface LtvSummary {
@@ -67,6 +76,7 @@ export interface CentralSummary {
   by_product: ProductBreakdown[];
   by_payment: PaymentBreakdown[];
   refunds: RefundBreakdown;
+  lost: LostSummary;
   ltv: LtvSummary;
   pageviews: number;
   checkouts: number;
