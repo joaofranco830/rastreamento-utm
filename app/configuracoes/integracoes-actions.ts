@@ -5,6 +5,26 @@ import { requireRole } from "@/lib/auth";
 import { getActiveProjectId } from "@/lib/tenant";
 import { setProjectCredential } from "@/lib/credentials";
 import { getVturbToken, listPlayers, VturbError } from "@/lib/vturb/client";
+import { runVturbSync } from "@/lib/vturb/sync";
+
+/** Sincroniza o Analytics do VSL (VTurb) do projeto. Admin-only. */
+export async function syncVturbAction(): Promise<{ ok: boolean; error?: string; players?: number; rows?: number }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner pode sincronizar." };
+  }
+  try {
+    const r = await runVturbSync(projectId);
+    if (!r.ok) return { ok: false, error: r.skipped === "no_credentials" ? "Salve a API key do VTurb primeiro." : r.error ?? "Falha no sync." };
+    revalidatePath("/funil/perpetuo/vsls");
+    return { ok: true, players: r.players, rows: r.rows };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Falha no sync do VTurb." };
+  }
+}
 
 /** Testa a conexão com o VTurb: lista os players (vídeos) da conta. Admin-only. */
 export async function testVturbConnection(): Promise<{ ok: boolean; error?: string; players?: { id: string; name: string }[] }> {

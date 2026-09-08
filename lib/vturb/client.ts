@@ -100,6 +100,18 @@ export async function listPlayers(token: string): Promise<VturbPlayer[]> {
   return Array.isArray(data) ? (data as VturbPlayer[]) : [];
 }
 
+/** Estatísticas totais do player por dia (sem agrupar por UTM). */
+export async function sessionStatsByDay(
+  token: string,
+  p: { player_id: string; start_date: string; end_date: string; video_duration?: number; timezone?: string },
+): Promise<VturbTrafficRow[]> {
+  const data = await vturbFetch(token, "/sessions/stats_by_day", {
+    method: "POST",
+    body: { timezone: TZ, ...p },
+  });
+  return Array.isArray(data) ? (data as VturbTrafficRow[]) : [];
+}
+
 /** Estatísticas do player agrupadas por UTM (query_key) e por dia. */
 export async function trafficOriginStatsByDay(
   token: string,

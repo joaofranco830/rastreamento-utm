@@ -9,6 +9,7 @@ const TABS = [
   { href: "/funil/perpetuo/origem", label: "Origem das UTMs" },
   { href: "/funil/perpetuo/campanhas", label: "Campanhas" },
   { href: "/funil/perpetuo/criativos", label: "Criativos" },
+  { href: "/funil/perpetuo/vsls", label: "VSLs" },
   { href: "/funil/perpetuo/visual", label: "Funil (visual)" },
   { href: "/funil/perpetuo/clientes", label: "Clientes" },
   { href: "/funil/perpetuo/configurar", label: "Configurar funil" },
