@@ -99,7 +99,7 @@ export default function ProductPaymentMatrix({ cells }: { cells: ProductPaymentC
                       const v = row?.get(p);
                       return (
                         <td key={p} className="whitespace-nowrap px-3 py-2 text-right text-foreground">
-                          {v == null || v === 0 ? <span className="text-zinc-600">—</span> : fmt(v)}
+                          {v == null || v === 0 ? <span className="text-zinc-500">—</span> : fmt(v)}
                         </td>
                       );
                     })}
