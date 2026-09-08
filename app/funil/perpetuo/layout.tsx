@@ -23,7 +23,7 @@ export default async function FunilLayout({ children }: { children: React.ReactN
 
   return (
     <Shell active="/funil/perpetuo">
-      <div className="mx-auto w-full max-w-[1400px]">
+      <div className="w-full">
         {/* ── Barra global do perpétuo (fixa entre as abas) ── */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[.1] bg-[var(--noite-2)] px-4 py-3">
           <div className="flex items-center gap-3">
