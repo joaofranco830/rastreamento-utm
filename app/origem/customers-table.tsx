@@ -32,11 +32,11 @@ export default function CustomersTable({ customers }: { customers: CustomerRow[]
     }
   }
 
-  if (!customers.length) return <p className="text-sm text-zinc-500">Sem clientes no período.</p>;
+  if (!customers.length) return <p className="text-sm text-zinc-400">Sem clientes no período.</p>;
 
   return (
     <div className="overflow-hidden rounded-xl border border-black/[.08] dark:border-white/[.12]">
-      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 border-b border-black/[.06] bg-black/[.02] px-4 py-2 text-xs text-zinc-500 dark:border-white/[.08] dark:bg-white/[.03]">
+      <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 border-b border-black/[.06] bg-black/[.02] px-4 py-2 text-xs text-zinc-400 dark:border-white/[.08] dark:bg-white/[.03]">
         <span>Cliente</span>
         <span className="text-right">Compras</span>
         <span className="text-right">Faturamento</span>
@@ -55,14 +55,14 @@ export default function CustomersTable({ customers }: { customers: CustomerRow[]
               </span>
               <span className="text-right text-sm tabular-nums">{c.orders}</span>
               <span className="text-right text-sm tabular-nums">{brl(c.net_revenue)}</span>
-              <span className="text-right text-xs text-zinc-500">{classLabel(c.last_class)}</span>
+              <span className="text-right text-xs text-zinc-400">{classLabel(c.last_class)}</span>
             </button>
             {open === c.buyer_email && (
               <div className="border-t border-black/[.06] bg-black/[.015] px-4 py-3 dark:border-white/[.08] dark:bg-white/[.02]">
                 {loadingFor === c.buyer_email && !history[c.buyer_email] ? (
-                  <p className="text-xs text-zinc-500">carregando…</p>
+                  <p className="text-xs text-zinc-400">carregando…</p>
                 ) : (history[c.buyer_email]?.length ?? 0) === 0 ? (
-                  <p className="text-xs text-zinc-500">Sem histórico.</p>
+                  <p className="text-xs text-zinc-400">Sem histórico.</p>
                 ) : (
                   <ul className="space-y-1.5">
                     {history[c.buyer_email].map((h) => (

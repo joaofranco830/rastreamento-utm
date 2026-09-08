@@ -42,7 +42,7 @@ export default function LoginPage() {
           <h1 className="text-xl font-semibold tracking-tight">
             Rastreamento UTM
           </h1>
-          <p className="text-sm text-zinc-500">Franco Advertising — entrar</p>
+          <p className="text-sm text-zinc-400">Franco Advertising — entrar</p>
         </div>
 
         <div className="space-y-1">

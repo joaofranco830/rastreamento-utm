@@ -30,7 +30,7 @@ export default async function MetaConnectPage() {
   return (
     <section>
       <h2 className="mb-1 text-lg font-medium">Integração Meta (Business Manager)</h2>
-      <p className="mb-6 text-sm text-zinc-500">
+      <p className="mb-6 text-sm text-zinc-400">
         Ligue a BM que anuncia os produtos do projeto <strong>{projectName}</strong>. Passo a passo — vale para qualquer BM
         nova depois.
       </p>
@@ -43,7 +43,7 @@ export default async function MetaConnectPage() {
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                     BM conectada ✓ — {accountList.length} {accountList.length === 1 ? "conta" : "contas"}
                   </p>
-                  <p className="mt-0.5 font-mono text-xs text-zinc-500">
+                  <p className="mt-0.5 font-mono text-xs text-zinc-400">
                     {accountList.map((a) => `act_${a}`).join(", ")}
                   </p>
                 </div>

@@ -22,7 +22,7 @@ export function DisconnectMeta() {
 
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span className="text-zinc-500">Remover a conexão do Meta deste projeto?</span>
+      <span className="text-zinc-400">Remover a conexão do Meta deste projeto?</span>
       <button
         onClick={() =>
           start(async () => {
@@ -36,7 +36,7 @@ export function DisconnectMeta() {
       >
         {pending ? "…" : "Sim, desconectar"}
       </button>
-      <button onClick={() => setConfirm(false)} className="text-zinc-500 hover:underline">
+      <button onClick={() => setConfirm(false)} className="text-zinc-400 hover:underline">
         cancelar
       </button>
     </div>

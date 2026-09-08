@@ -83,7 +83,7 @@ function ProductPanel({ rows, view }: { rows: ProductBreakdown[]; view: View }) 
                 <tr key={r.product_id} className="border-t border-white/[.06] first:border-t-0">
                   <td className="py-2 pr-2">
                     <span className="text-foreground">{r.name}</span>
-                    <span className="ml-2 text-[11px] text-zinc-500">{ROLE_LABELS[r.role] ?? r.role}</span>
+                    <span className="ml-2 text-[11px] text-zinc-400">{ROLE_LABELS[r.role] ?? r.role}</span>
                   </td>
                   <td className="whitespace-nowrap py-2 text-right font-display text-foreground">{m.label}</td>
                   <td className="w-12 whitespace-nowrap py-2 pl-2 text-right text-xs text-zinc-400">{pct(m.share)}</td>

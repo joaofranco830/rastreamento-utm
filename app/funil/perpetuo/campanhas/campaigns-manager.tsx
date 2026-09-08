@@ -184,7 +184,7 @@ export default function CampaignsManager({
           {/* filtro de produto */}
           <div className="relative">
             <button onClick={() => setProdOpen((o) => !o)} className="inline-flex items-center gap-2 rounded-lg border border-white/[.18] px-3 py-2 text-sm text-zinc-200 hover:bg-white/[.06]">
-              <span aria-hidden>🏷️</span> {prodLabel} <span className="text-zinc-500" aria-hidden>▾</span>
+              <span aria-hidden>🏷️</span> {prodLabel} <span className="text-zinc-400" aria-hidden>▾</span>
             </button>
             {prodOpen && (
               <div className="absolute right-0 z-30 mt-2 max-h-80 w-72 overflow-y-auto rounded-xl border border-white/[.14] bg-[var(--noite-2)] p-2 shadow-xl">
@@ -226,7 +226,7 @@ export default function CampaignsManager({
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={activeCols.length + 2} className="px-4 py-10 text-center text-zinc-500">{loading ? "" : "Sem dados no período."}</td></tr>
+                <tr><td colSpan={activeCols.length + 2} className="px-4 py-10 text-center text-zinc-400">{loading ? "" : "Sem dados no período."}</td></tr>
               ) : (
                 rows.map((r) => {
                   const isSel = sel[level].has(r.meta_id);
@@ -265,7 +265,7 @@ export default function CampaignsManager({
         </div>
       </div>
 
-      <p className="px-4 py-3 text-xs text-zinc-500">
+      <p className="px-4 py-3 text-xs text-zinc-400">
         Faturamento/compras usam o <b>nosso</b> last-click (só vendas rastreadas entram). Conjunto casa por ID (<code>utm_term</code>), campanha/criativo por nome. O consolidado por criativo agora fica na aba <b>Criativos</b>.
       </p>
     </div>

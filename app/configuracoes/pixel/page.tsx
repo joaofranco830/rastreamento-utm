@@ -56,7 +56,7 @@ export default async function PixelTab() {
         <h2 className="text-lg font-medium">Pixel do projeto</h2>
         <StatusBadge on={recebendo} labelOn="Recebendo eventos" labelOff="Sem sinal (24h)" />
       </div>
-      <p className="mb-3 text-sm text-zinc-500">
+      <p className="mb-3 text-sm text-zinc-400">
         Cole este script em <strong>todas</strong> as páginas do funil (antes do <code>&lt;/body&gt;</code>). A chave do
         projeto já vem embutida — funciona mesmo se o construtor de página remover atributos.
       </p>
@@ -69,7 +69,7 @@ export default async function PixelTab() {
       {/* Retenção de eventos brutos — tema de dados de navegação, mora aqui. */}
       <div className="mt-10 border-t border-black/[.06] pt-6 dark:border-white/[.08]">
         <h3 className="mb-1 text-sm font-medium">Retenção de eventos brutos</h3>
-        <p className="mb-3 text-xs text-zinc-500">
+        <p className="mb-3 text-xs text-zinc-400">
           Faxina automática dos eventos de navegação antigos. Vendas e agregados diários nunca são apagados.
         </p>
         <RetentionForm initialDays={config.retention_days} />

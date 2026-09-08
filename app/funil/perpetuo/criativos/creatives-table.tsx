@@ -102,7 +102,7 @@ export default function CreativesTable({
           <RowLimit value={limit} onChange={setLimit} />
           <div className="relative">
             <button onClick={() => setProdOpen((o) => !o)} className="inline-flex items-center gap-2 rounded-lg border border-white/[.18] px-3 py-2 text-sm text-zinc-200 hover:bg-white/[.06]">
-              <span aria-hidden>🏷️</span> {prodLabel} <span className="text-zinc-500" aria-hidden>▾</span>
+              <span aria-hidden>🏷️</span> {prodLabel} <span className="text-zinc-400" aria-hidden>▾</span>
             </button>
             {prodOpen && (
               <div className="absolute right-0 z-30 mt-2 max-h-80 w-72 overflow-y-auto rounded-xl border border-white/[.14] bg-[var(--noite-2)] p-2 shadow-xl">
@@ -136,13 +136,13 @@ export default function CreativesTable({
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={activeCols.length + 1} className="px-4 py-10 text-center text-zinc-500">{loading ? "" : "Sem dados."}</td></tr>
+                <tr><td colSpan={activeCols.length + 1} className="px-4 py-10 text-center text-zinc-400">{loading ? "" : "Sem dados."}</td></tr>
               ) : (
                 rows.map((r, i) => (
                   <tr key={`${r.name}-${i}`} className="border-b border-white/[.05] hover:bg-white/[.03]">
                     <td className="sticky left-0 z-10 min-w-[320px] max-w-[400px] bg-[var(--noite-2)] px-3 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-zinc-500">{i + 1}</span>
+                        <span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-zinc-400">{i + 1}</span>
                         <AdPreview adMetaId={r.ad_meta_id} name={r.name} />
                         <span className="truncate font-medium text-foreground" title={r.name ?? ""}>{r.name ?? "—"}</span>
                       </div>

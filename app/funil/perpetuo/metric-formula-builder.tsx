@@ -197,7 +197,7 @@ export default function MetricFormulaBuilder({
           <div className="text-sm">
             <span className="text-aco">Prévia: </span>
             {formula.length === 0 ? (
-              <span className="text-zinc-500">—</span>
+              <span className="text-zinc-400">—</span>
             ) : valid ? (
               <span className="font-display text-foreground">{formatValue(preview, format)}</span>
             ) : (

@@ -6,7 +6,7 @@ export default function EmProducao({ titulo }: { titulo: string }) {
         🚧
       </div>
       <h1 className="text-lg font-semibold tracking-tight">{titulo}</h1>
-      <p className="max-w-sm text-sm text-zinc-500">
+      <p className="max-w-sm text-sm text-zinc-400">
         Esta área está <strong>em produção</strong> — faz parte do mapa da plataforma e será
         construída numa próxima leva. Por enquanto, é um espaço reservado.
       </p>

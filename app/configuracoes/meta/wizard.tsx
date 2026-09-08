@@ -114,14 +114,14 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
       {step === 1 && (
         <div>
           <h3 className="text-base font-medium">1. Gere o token na sua Business Manager</h3>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-400">
             Faça uma vez por BM (~5 min). O token é de um <strong>usuário de sistema</strong> (System User), não da sua conta
             pessoal — assim não expira quando você troca a senha. São 4 partes; siga na ordem. Os nomes dos menus mudam de
             tempos em tempos; se o rótulo estiver um pouco diferente, procure o equivalente.
           </p>
 
           <p className="mt-4 text-sm font-medium">Parte A — Crie um aplicativo (App)</p>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <p className="mt-0.5 text-xs text-zinc-400">
             O token precisa estar “amarrado” a um app. Quase ninguém tem um ainda — criar leva 1 min, é só uma “chave”, não
             precisa publicar nem enviar para revisão.
           </p>
@@ -163,7 +163,7 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
           </ol>
 
           <p className="mt-4 text-sm font-medium">Parte C — Dê 2 acessos a esse usuário de sistema</p>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <p className="mt-0.5 text-xs text-zinc-400">
             Clique no usuário que acabou de criar. Você vai <strong>adicionar ativos duas vezes</strong> — o app e a conta de
             anúncio.
           </p>
@@ -199,7 +199,7 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
             <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
               Travou em algum passo?
             </summary>
-            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs text-zinc-500">
+            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-xs text-zinc-400">
               <li>
                 <strong>Não acho “Usuários do sistema”:</strong> confirme que está em <em>business.facebook.com/settings</em>{" "}
                 (painel da BM), não no painel do app. Só admin da BM enxerga essa área.
@@ -233,7 +233,7 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
       {step === 2 && (
         <div>
           <h3 className="text-base font-medium">2. Cole o token e teste a conexão</h3>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-400">
             O token vai <strong>cifrado</strong> para o cofre deste projeto. Vamos usá-lo para listar as contas de anúncio
             que ele enxerga.
           </p>
@@ -246,7 +246,7 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
           />
           {msg && <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">{msg}</p>}
           <div className="mt-4 flex items-center justify-between">
-            <button onClick={() => setStep(1)} className="text-sm text-zinc-500 hover:underline">
+            <button onClick={() => setStep(1)} className="text-sm text-zinc-400 hover:underline">
               ← voltar
             </button>
             <button
@@ -264,16 +264,16 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
       {step === 3 && (
         <div>
           <h3 className="text-base font-medium">3. Escolha as contas de anúncio</h3>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-400">
             Token válido ✓ — encontrei {accounts.length} {accounts.length === 1 ? "conta" : "contas"}. Marque{" "}
             <strong>todas</strong> as contas que anunciam os produtos deste projeto (pode ser mais de uma).
           </p>
           {accounts.length > 1 && (
             <div className="mt-2 flex gap-3 text-xs">
-              <button onClick={() => setSelected(accounts.map((a) => a.id))} className="text-zinc-500 hover:underline">
+              <button onClick={() => setSelected(accounts.map((a) => a.id))} className="text-zinc-400 hover:underline">
                 Marcar todas
               </button>
-              <button onClick={() => setSelected([])} className="text-zinc-500 hover:underline">
+              <button onClick={() => setSelected([])} className="text-zinc-400 hover:underline">
                 Limpar
               </button>
             </div>
@@ -303,7 +303,7 @@ export function MetaWizard({ alreadyConnected }: { alreadyConnected: boolean }) 
           </div>
           {msg && <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">{msg}</p>}
           <div className="mt-4 flex items-center justify-between">
-            <button onClick={() => setStep(2)} className="text-sm text-zinc-500 hover:underline">
+            <button onClick={() => setStep(2)} className="text-sm text-zinc-400 hover:underline">
               ← trocar token
             </button>
             <button

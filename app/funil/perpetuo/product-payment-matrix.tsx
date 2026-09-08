@@ -93,13 +93,13 @@ export default function ProductPaymentMatrix({ cells }: { cells: ProductPaymentC
                   <tr key={prod.id} className="border-t border-white/[.06]">
                     <td className="sticky left-0 z-10 bg-[var(--noite-2)] px-3 py-2">
                       <span className="text-foreground">{prod.name}</span>
-                      <span className="ml-2 text-[11px] text-zinc-500">{ROLE_LABELS[prod.role] ?? prod.role}</span>
+                      <span className="ml-2 text-[11px] text-zinc-400">{ROLE_LABELS[prod.role] ?? prod.role}</span>
                     </td>
                     {payments.map((p) => {
                       const v = row?.get(p);
                       return (
                         <td key={p} className="whitespace-nowrap px-3 py-2 text-right text-foreground">
-                          {v == null || v === 0 ? <span className="text-zinc-500">—</span> : fmt(v)}
+                          {v == null || v === 0 ? <span className="text-zinc-400">—</span> : fmt(v)}
                         </td>
                       );
                     })}
@@ -114,7 +114,7 @@ export default function ProductPaymentMatrix({ cells }: { cells: ProductPaymentC
                 {payments.map((p) => (
                   <td key={p} className="whitespace-nowrap px-3 py-2 text-right text-foreground">
                     {fmt(colTotal.get(p) ?? 0)}
-                    <span className="ml-1 text-[10px] font-sans text-zinc-500">{pct(grand > 0 ? (colTotal.get(p) ?? 0) / grand : 0)}</span>
+                    <span className="ml-1 text-[10px] font-sans text-zinc-400">{pct(grand > 0 ? (colTotal.get(p) ?? 0) / grand : 0)}</span>
                   </td>
                 ))}
                 <td className="whitespace-nowrap px-3 py-2 text-right text-lima">{fmt(grand)}</td>

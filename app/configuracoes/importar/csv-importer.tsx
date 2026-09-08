@@ -81,13 +81,13 @@ export default function CsvImporter() {
           type="file"
           accept=".csv,text/csv"
           onChange={onFile}
-          className="block w-full text-sm text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-foreground file:px-3 file:py-2 file:text-sm file:font-medium file:text-background"
+          className="block w-full text-sm text-zinc-400 file:mr-3 file:rounded-lg file:border-0 file:bg-foreground file:px-3 file:py-2 file:text-sm file:font-medium file:text-background"
         />
       </div>
 
       {headers.length > 0 && (
         <>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-zinc-400">
             {rows.length} linhas em <span className="font-mono">{filename}</span>. Confira o mapeamento das colunas:
           </p>
 

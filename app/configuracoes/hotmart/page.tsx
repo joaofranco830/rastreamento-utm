@@ -37,7 +37,7 @@ export default async function HotmartTab() {
   return (
     <section>
       <h2 className="mb-2 text-lg font-medium">Integração Hotmart (webhook)</h2>
-      <p className="mb-3 text-sm text-zinc-500">
+      <p className="mb-3 text-sm text-zinc-400">
         URL única deste projeto para o Webhook 2.0 da Hotmart. Idempotente e validada por Hottok.
       </p>
       {webhookUrl ? <CopyField value={webhookUrl} /> : <p className="text-sm text-amber-600">Nenhum endpoint ativo.</p>}

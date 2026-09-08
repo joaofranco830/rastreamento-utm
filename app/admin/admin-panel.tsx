@@ -54,8 +54,8 @@ export default function AdminPanel({ projects, members, users }: { projects: Pro
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Administração global</h1>
-        <p className="text-sm text-zinc-500">Projetos, usuários e membros — só o owner.</p>
-        {msg && <p className="mt-2 text-sm text-zinc-500">{msg}</p>}
+        <p className="text-sm text-zinc-400">Projetos, usuários e membros — só o owner.</p>
+        {msg && <p className="mt-2 text-sm text-zinc-400">{msg}</p>}
       </div>
 
       {/* Criar projeto */}
@@ -97,7 +97,7 @@ export default function AdminPanel({ projects, members, users }: { projects: Pro
 
       {/* Projetos + membros */}
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium text-zinc-500">Projetos &amp; membros</h2>
+        <h2 className="text-sm font-medium text-zinc-400">Projetos &amp; membros</h2>
         {projects.map((p) => {
           const mem = members.filter((m) => m.project_id === p.id);
           const nonMembers = users.filter((u) => !u.is_owner && !mem.some((m) => m.user_id === u.id));
@@ -108,7 +108,7 @@ export default function AdminPanel({ projects, members, users }: { projects: Pro
                 {mem.length === 0 && <span className="text-xs text-zinc-400">Sem membros.</span>}
                 {mem.map((m) => (
                   <div key={m.user_id} className="flex items-center justify-between gap-2 text-sm">
-                    <span>{nameOf(m.user_id)} · <span className="text-zinc-500">{m.role}</span></span>
+                    <span>{nameOf(m.user_id)} · <span className="text-zinc-400">{m.role}</span></span>
                     <button className="text-xs text-zinc-400 hover:text-red-500" disabled={pending} onClick={() => run(() => removeMemberAction(p.id, m.user_id), "Membro removido ✓")}>remover</button>
                   </div>
                 ))}

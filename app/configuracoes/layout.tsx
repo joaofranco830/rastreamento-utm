@@ -16,7 +16,7 @@ export default async function ConfigLayout({ children }: { children: React.React
     <Shell active="/configuracoes">
       <div className="mx-auto w-full max-w-3xl">
         <h1 className="mb-1 text-xl font-semibold tracking-tight">Configurar</h1>
-        <p className="mb-5 text-sm text-zinc-500">Configurações do projeto — cada tópico em uma aba.</p>
+        <p className="mb-5 text-sm text-zinc-400">Configurações do projeto — cada tópico em uma aba.</p>
         <ConfigTabs />
         {children}
       </div>

@@ -49,7 +49,7 @@ export function HottokForm({ configured }: { configured: boolean }) {
           Salvar
         </button>
       </div>
-      {msg && <span className="text-xs text-zinc-500">{msg}</span>}
+      {msg && <span className="text-xs text-zinc-400">{msg}</span>}
     </div>
   );
 }
@@ -101,7 +101,7 @@ export function MetaForm({ tokenSet, accountSet }: { tokenSet: boolean; accountS
           Salvar
         </button>
       </div>
-      {msg && <span className="text-xs text-zinc-500">{msg}</span>}
+      {msg && <span className="text-xs text-zinc-400">{msg}</span>}
     </div>
   );
 }

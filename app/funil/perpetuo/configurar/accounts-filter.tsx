@@ -46,7 +46,7 @@ export default function AccountsFilter({
 
   if (accounts.length === 0) {
     return (
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-zinc-400">
         Nenhuma conta de anúncio sincronizada ainda. Conecte a BM em <strong>Configurar → Integração Meta</strong>.
       </p>
     );
@@ -55,10 +55,10 @@ export default function AccountsFilter({
   return (
     <div className="space-y-3">
       <div className="flex gap-3 text-xs">
-        <button onClick={() => setSelected(accounts.map((a) => a.meta_account_id))} className="text-zinc-500 hover:underline">
+        <button onClick={() => setSelected(accounts.map((a) => a.meta_account_id))} className="text-zinc-400 hover:underline">
           Marcar todas
         </button>
-        <button onClick={() => setSelected([])} className="text-zinc-500 hover:underline">
+        <button onClick={() => setSelected([])} className="text-zinc-400 hover:underline">
           Limpar
         </button>
       </div>
@@ -90,7 +90,7 @@ export default function AccountsFilter({
         >
           {pending ? "Salvando…" : "Salvar contas"}
         </button>
-        {msg && <span className="text-xs text-zinc-500">{msg}</span>}
+        {msg && <span className="text-xs text-zinc-400">{msg}</span>}
       </div>
       <p className="text-xs text-zinc-400">
         Só afeta o <strong>investido</strong>, ROAS e métricas do Meta. Faturamento e nº de vendas são do projeto inteiro (uma

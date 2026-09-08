@@ -124,7 +124,7 @@ export default function ConfigForm({ products, accounts, sf }: { products: Produ
         <button onClick={save} disabled={pending} className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50">
           Salvar configuração
         </button>
-        {msg && <span className="text-sm text-zinc-500">{msg}</span>}
+        {msg && <span className="text-sm text-zinc-400">{msg}</span>}
       </div>
       <p className="text-xs text-zinc-400">
         Conta/campanha/produtos já afetam os números agora. Oferta específica e recorrência ficam <strong>salvas</strong> e

@@ -81,10 +81,10 @@ export function ManageAccounts() {
         <>
           {accounts.length > 1 && (
             <div className="mb-2 flex gap-3 text-xs">
-              <button onClick={() => setSelected(accounts.map((a) => a.id))} className="text-zinc-500 hover:underline">
+              <button onClick={() => setSelected(accounts.map((a) => a.id))} className="text-zinc-400 hover:underline">
                 Marcar todas
               </button>
-              <button onClick={() => setSelected([])} className="text-zinc-500 hover:underline">
+              <button onClick={() => setSelected([])} className="text-zinc-400 hover:underline">
                 Limpar
               </button>
             </div>

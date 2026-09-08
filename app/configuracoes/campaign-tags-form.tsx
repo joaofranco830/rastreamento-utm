@@ -36,7 +36,7 @@ export default function CampaignTagsForm({ initialTags }: { initialTags: string[
         spellCheck={false}
         className="w-full rounded-xl border border-black/[.12] bg-transparent px-3 py-2.5 font-mono text-sm outline-none focus:border-foreground dark:border-white/[.2]"
       />
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-400">
         Uma tag por linha. Só campanhas cujo <b>nome contém</b> alguma dessas tags entram nas contas
         e aparecem no dashboard. Deixe vazio para não filtrar por tag.
       </p>
@@ -62,7 +62,7 @@ export default function CampaignTagsForm({ initialTags }: { initialTags: string[
         >
           {pending ? "Salvando…" : "Salvar tags"}
         </button>
-        {msg && <span className="text-xs text-zinc-500">{msg}</span>}
+        {msg && <span className="text-xs text-zinc-400">{msg}</span>}
       </div>
     </div>
   );
