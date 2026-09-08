@@ -6,6 +6,7 @@ import { COLUMN_FMT, COLUMN_LABEL, orderedColumns } from "../campanhas/columns";
 import ColumnsConfig from "../campanhas/columns-config";
 import RowLimit from "../campanhas/row-limit";
 import AdPreview from "../campanhas/ad-preview";
+import Spinner from "../campanhas/spinner";
 import { loadCreativeRows } from "../campanhas/actions";
 
 interface Product {
@@ -121,47 +122,50 @@ export default function CreativesTable({
         </div>
       </div>
 
-      <div className={`overflow-x-auto transition-opacity ${loading ? "opacity-50" : ""}`}>
-        <table className="w-full min-w-max text-xs">
-          <thead>
-            <tr className="border-b border-white/[.08] text-left text-zinc-400">
-              <th className="sticky left-0 z-10 min-w-[320px] bg-[var(--noite-2)] px-3 py-2.5 font-medium">Criativo</th>
-              {activeCols.map((c) => (
-                <th key={c} className="whitespace-nowrap px-4 py-2.5 text-right font-medium">{COLUMN_LABEL[c]}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr><td colSpan={activeCols.length + 1} className="px-4 py-6 text-center text-zinc-500">{loading ? "Carregando…" : "Sem dados."}</td></tr>
-            ) : (
-              rows.map((r, i) => (
-                <tr key={`${r.name}-${i}`} className="border-b border-white/[.05] hover:bg-white/[.03]">
-                  <td className="sticky left-0 z-10 min-w-[320px] max-w-[400px] bg-[var(--noite-2)] px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-zinc-500">{i + 1}</span>
-                      <AdPreview adMetaId={r.ad_meta_id} name={r.name} />
-                      <span className="truncate font-medium text-foreground" title={r.name ?? ""}>{r.name ?? "—"}</span>
-                    </div>
-                  </td>
-                  {activeCols.map((c) => (
-                    <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-200">{COLUMN_FMT[c](r)}</td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-          {rows.length > 0 && (
-            <tfoot>
-              <tr className="border-t-2 border-white/[.12] bg-white/[.03] font-medium">
-                <td className="sticky left-0 z-10 bg-[#14141c] px-3 py-3 text-zinc-300">Resultados de {rows.length} criativos</td>
+      <div className="relative">
+        <Spinner show={loading} />
+        <div className="overflow-auto rounded-b-2xl" style={{ height: "calc(100dvh - 300px)", minHeight: "360px" }}>
+          <table className="w-full min-w-max text-xs">
+            <thead>
+              <tr className="text-left text-zinc-400">
+                <th className="sticky left-0 top-0 z-40 min-w-[320px] border-b border-white/[.08] bg-[var(--noite-2)] px-3 py-2.5 font-medium">Criativo</th>
                 {activeCols.map((c) => (
-                  <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-foreground">{COLUMN_FMT[c](totals)}</td>
+                  <th key={c} className="sticky top-0 z-30 whitespace-nowrap border-b border-white/[.08] bg-[var(--noite-2)] px-4 py-2.5 text-right font-medium">{COLUMN_LABEL[c]}</th>
                 ))}
               </tr>
-            </tfoot>
-          )}
-        </table>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr><td colSpan={activeCols.length + 1} className="px-4 py-10 text-center text-zinc-500">{loading ? "" : "Sem dados."}</td></tr>
+              ) : (
+                rows.map((r, i) => (
+                  <tr key={`${r.name}-${i}`} className="border-b border-white/[.05] hover:bg-white/[.03]">
+                    <td className="sticky left-0 z-10 min-w-[320px] max-w-[400px] bg-[var(--noite-2)] px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 shrink-0 text-right text-[11px] tabular-nums text-zinc-500">{i + 1}</span>
+                        <AdPreview adMetaId={r.ad_meta_id} name={r.name} />
+                        <span className="truncate font-medium text-foreground" title={r.name ?? ""}>{r.name ?? "—"}</span>
+                      </div>
+                    </td>
+                    {activeCols.map((c) => (
+                      <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-200">{COLUMN_FMT[c](r)}</td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+            {rows.length > 0 && (
+              <tfoot>
+                <tr className="font-medium">
+                  <td className="sticky bottom-0 left-0 z-40 border-t-2 border-white/[.12] bg-[#14141c] px-3 py-3 text-zinc-300">Resultados de {rows.length} criativos</td>
+                  {activeCols.map((c) => (
+                    <td key={c} className="sticky bottom-0 z-30 whitespace-nowrap border-t-2 border-white/[.12] bg-[#14141c] px-4 py-3 text-right tabular-nums text-foreground">{COLUMN_FMT[c](totals)}</td>
+                  ))}
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
       </div>
     </div>
   );

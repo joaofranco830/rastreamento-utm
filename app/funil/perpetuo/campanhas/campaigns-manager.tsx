@@ -6,6 +6,7 @@ import { COLUMN_FMT, COLUMN_LABEL, orderedColumns } from "./columns";
 import ColumnsConfig from "./columns-config";
 import RowLimit from "./row-limit";
 import AdPreview from "./ad-preview";
+import Spinner from "./spinner";
 import { loadCampaignRows } from "./actions";
 
 interface Product {
@@ -205,60 +206,63 @@ export default function CampaignsManager({
         </div>
       </div>
 
-      {/* tabela */}
-      <div className={`overflow-x-auto transition-opacity ${loading ? "opacity-50" : ""}`}>
-        <table className="w-full min-w-max text-xs">
-          <thead>
-            <tr className="border-b border-white/[.08] text-left text-zinc-400">
-              <th className="sticky left-0 z-20 bg-[var(--noite-2)] px-3 py-2.5">
-                <input type="checkbox" checked={rows.length > 0 && sel[level].size === rows.length} onChange={toggleAll} className="h-3.5 w-3.5 accent-eletrico" />
-              </th>
-              <th className="sticky left-10 z-20 min-w-[320px] bg-[var(--noite-2)] px-3 py-2.5 font-medium">
-                {LEVELS.find((l) => l.key === level)?.label}
-              </th>
-              {activeCols.map((c) => (
-                <th key={c} className="whitespace-nowrap px-4 py-2.5 text-right font-medium">{COLUMN_LABEL[c]}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr><td colSpan={activeCols.length + 2} className="px-4 py-6 text-center text-zinc-500">{loading ? "Carregando…" : "Sem dados no período."}</td></tr>
-            ) : (
-              rows.map((r) => {
-                const isSel = sel[level].has(r.meta_id);
-                return (
-                  <tr key={r.meta_id} className={`border-b border-white/[.05] ${isSel ? "bg-eletrico/[.08]" : "hover:bg-white/[.03]"}`}>
-                    <td className={`sticky left-0 z-10 px-3 py-3 ${isSel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
-                      <input type="checkbox" checked={isSel} onChange={() => toggleRow(r.meta_id)} className="h-3.5 w-3.5 accent-eletrico" />
-                    </td>
-                    <td className={`sticky left-10 z-10 min-w-[320px] max-w-[380px] px-3 py-3 ${isSel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
-                      <div className="mb-1"><StatusPill status={r.effective_status} /></div>
-                      <div className="flex items-center gap-2">
-                        {level === "creative" && <AdPreview adMetaId={r.meta_id} name={r.name} />}
-                        <span className="truncate font-medium text-eletrico-cl" title={r.name ?? ""}>{r.name ?? "—"}</span>
-                      </div>
-                    </td>
-                    {activeCols.map((c) => (
-                      <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-200">{COLUMN_FMT[c](r)}</td>
-                    ))}
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-          {rows.length > 0 && (
-            <tfoot>
-              <tr className="border-t-2 border-white/[.12] bg-white/[.03] font-medium">
-                <td className="sticky left-0 z-10 bg-[#14141c] px-3 py-3" />
-                <td className="sticky left-10 z-10 bg-[#14141c] px-3 py-3 text-zinc-300">Resultados de {rows.length} {LEVEL_NOUN[level]}</td>
+      {/* tabela — preenche a tela; cabeçalho fixo no topo e totais fixos embaixo */}
+      <div className="relative">
+        <Spinner show={loading} />
+        <div className="overflow-auto rounded-b-2xl" style={{ height: "calc(100dvh - 300px)", minHeight: "360px" }}>
+          <table className="w-full min-w-max text-xs">
+            <thead>
+              <tr className="text-left text-zinc-400">
+                <th className="sticky left-0 top-0 z-40 border-b border-white/[.08] bg-[var(--noite-2)] px-3 py-2.5">
+                  <input type="checkbox" checked={rows.length > 0 && sel[level].size === rows.length} onChange={toggleAll} className="h-3.5 w-3.5 accent-eletrico" />
+                </th>
+                <th className="sticky left-10 top-0 z-40 min-w-[320px] border-b border-white/[.08] bg-[var(--noite-2)] px-3 py-2.5 font-medium">
+                  {LEVELS.find((l) => l.key === level)?.label}
+                </th>
                 {activeCols.map((c) => (
-                  <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-foreground">{COLUMN_FMT[c](totals)}</td>
+                  <th key={c} className="sticky top-0 z-30 whitespace-nowrap border-b border-white/[.08] bg-[var(--noite-2)] px-4 py-2.5 text-right font-medium">{COLUMN_LABEL[c]}</th>
                 ))}
               </tr>
-            </tfoot>
-          )}
-        </table>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr><td colSpan={activeCols.length + 2} className="px-4 py-10 text-center text-zinc-500">{loading ? "" : "Sem dados no período."}</td></tr>
+              ) : (
+                rows.map((r) => {
+                  const isSel = sel[level].has(r.meta_id);
+                  return (
+                    <tr key={r.meta_id} className={`border-b border-white/[.05] ${isSel ? "bg-eletrico/[.08]" : "hover:bg-white/[.03]"}`}>
+                      <td className={`sticky left-0 z-10 px-3 py-3 ${isSel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
+                        <input type="checkbox" checked={isSel} onChange={() => toggleRow(r.meta_id)} className="h-3.5 w-3.5 accent-eletrico" />
+                      </td>
+                      <td className={`sticky left-10 z-10 min-w-[320px] max-w-[380px] px-3 py-3 ${isSel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
+                        <div className="mb-1"><StatusPill status={r.effective_status} /></div>
+                        <div className="flex items-center gap-2">
+                          {level === "creative" && <AdPreview adMetaId={r.meta_id} name={r.name} />}
+                          <span className="truncate font-medium text-eletrico-cl" title={r.name ?? ""}>{r.name ?? "—"}</span>
+                        </div>
+                      </td>
+                      {activeCols.map((c) => (
+                        <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-200">{COLUMN_FMT[c](r)}</td>
+                      ))}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+            {rows.length > 0 && (
+              <tfoot>
+                <tr className="font-medium">
+                  <td className="sticky bottom-0 left-0 z-40 border-t-2 border-white/[.12] bg-[#14141c] px-3 py-3" />
+                  <td className="sticky bottom-0 left-10 z-40 border-t-2 border-white/[.12] bg-[#14141c] px-3 py-3 text-zinc-300">Resultados de {rows.length} {LEVEL_NOUN[level]}</td>
+                  {activeCols.map((c) => (
+                    <td key={c} className="sticky bottom-0 z-30 whitespace-nowrap border-t-2 border-white/[.12] bg-[#14141c] px-4 py-3 text-right tabular-nums text-foreground">{COLUMN_FMT[c](totals)}</td>
+                  ))}
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
       </div>
 
       <p className="px-4 py-3 text-xs text-zinc-500">
