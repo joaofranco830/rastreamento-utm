@@ -291,10 +291,10 @@ export default async function DashboardPage({
 
         {/* fluxo dentro do checkout */}
         <h3 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-aco">
-          Fluxo do checkout <span className="text-zinc-600">· {inteiro(ck.entered)} entraram{s.checkouts_source === "meta" ? " (Meta)" : ""}</span>
+          Fluxo do checkout <span className="text-zinc-600">· {inteiro(ck.entered)} entraram{s.checkouts_source === "meta" ? " (Meta)" : ""} · só front</span>
         </h3>
         <div className="flex flex-wrap gap-3">
-          <FunnelStep label="Comprou" value={pct(ckPct(ck.bought))} hint={`${inteiro(ck.bought)} compras`} />
+          <FunnelStep label="Comprou (front)" value={pct(ckPct(ck.bought))} hint={`${inteiro(ck.bought)} compras`} />
           <FunnelStep label="Pix/boleto não pago" value={pct(ckPct(ck.unpaid))} hint={`${inteiro(ck.unpaid)}`} />
           <FunnelStep label="Cancelado" value={pct(ckPct(ck.canceled))} hint={`${inteiro(ck.canceled)}`} />
           <FunnelStep label="Abandonou" value={pct(ckPct(ck.abandoned))} hint={`${inteiro(ck.abandoned)}`} />
