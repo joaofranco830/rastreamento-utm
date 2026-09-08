@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { CampaignRow, CreativeRow, Level, Metrics } from "@/lib/campanhas";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CampaignRow, Level, Metrics } from "@/lib/campanhas";
 import { COLUMN_FMT, COLUMN_LABEL, orderedColumns } from "./columns";
 import ColumnsConfig from "./columns-config";
+import { loadCampaignRows } from "./actions";
 
 interface Product {
   product_id: string;
@@ -18,6 +18,7 @@ const LEVELS: { key: Level; label: string; icon: string; order: number }[] = [
   { key: "creative", label: "Anúncios", icon: "▢", order: 2 },
 ];
 const LEVEL_NOUN: Record<Level, string> = { campaign: "campanhas", adset: "conjuntos", creative: "anúncios" };
+const ROW_LIMITS = [10, 20, 50, 100];
 
 const EMPTY_METRICS: Metrics = {
   spend: 0, impressions: 0, link_clicks: 0, leads: 0, follows: 0,
@@ -43,67 +44,84 @@ function StatusPill({ status }: { status: string | null }) {
   );
 }
 
+type Sel = Record<Level, Set<string>>;
+
+function parentsFor(level: Level, sel: Sel): string[] {
+  if (level === "adset") return [...sel.campaign];
+  if (level === "creative") return [...sel.adset, ...sel.campaign];
+  return [];
+}
+
 export default function CampaignsManager({
-  level,
-  rows,
-  creatives,
+  initialRows,
+  from,
+  to,
   products,
   cols,
   presets,
-  parents,
-  productIds,
 }: {
-  level: Level;
-  rows: CampaignRow[];
-  creatives: CreativeRow[];
+  initialRows: CampaignRow[];
+  from: string;
+  to: string;
   products: Product[];
   cols: string[] | null;
   presets: { name: string; cols: string[] }[];
-  parents: string[];
-  productIds: string[];
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const sp = useSearchParams();
-
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [level, setLevel] = useState<Level>("campaign");
+  const [sel, setSel] = useState<Sel>({ campaign: new Set(), adset: new Set(), creative: new Set() });
+  const [productIds, setProductIds] = useState<string[]>([]);
+  const [limit, setLimit] = useState(20);
+  const [rows, setRows] = useState<CampaignRow[]>(initialRows);
+  const [loading, setLoading] = useState(false);
   const [prodOpen, setProdOpen] = useState(false);
+  const first = useRef(true);
 
   const activeCols = orderedColumns(cols);
   const frontIds = products.filter((p) => p.role === "principal").map((p) => p.product_id);
-  const curOrder = LEVELS.find((l) => l.key === level)!.order;
 
-  function navigate(next: Record<string, string | null>) {
-    const params = new URLSearchParams(sp.toString());
-    for (const [k, v] of Object.entries(next)) {
-      if (v === null || v === "") params.delete(k);
-      else params.set(k, v);
+  const parentsKey = parentsFor(level, sel).join(",");
+  const productKey = productIds.join(",");
+
+  // Refetch client-side quando muda nível/filtro de produto/limite/pais derivados.
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return; // usa initialRows na 1ª renderização
     }
-    router.push(`${pathname}?${params.toString()}`);
-  }
-
-  /** Navegação fluida: ao ir para um nível MAIS PROFUNDO, leva a seleção como filtro. */
-  function goLevel(target: Level) {
-    const deeper = LEVELS.find((l) => l.key === target)!.order > curOrder;
-    const useSel = deeper && selected.size > 0;
-    setSelected(new Set());
-    navigate({ level: target, parents: useSel ? [...selected].join(",") : null });
-  }
+    let cancelled = false;
+    setLoading(true);
+    loadCampaignRows({ level, parentIds: parentsFor(level, sel), productIds, from, to, limit })
+      .then((r) => {
+        if (!cancelled) setRows(r.ok ? r.rows : []);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [level, parentsKey, productKey, limit, from, to]);
 
   function toggleRow(id: string) {
-    setSelected((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
+    setSel((prev) => {
+      const s = new Set(prev[level]);
+      if (s.has(id)) s.delete(id);
+      else s.add(id);
+      return { ...prev, [level]: s };
     });
   }
   function toggleAll() {
-    setSelected((prev) => (prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.meta_id))));
+    setSel((prev) => {
+      const all = prev[level].size === rows.length ? new Set<string>() : new Set(rows.map((r) => r.meta_id));
+      return { ...prev, [level]: all };
+    });
+  }
+  function clearLevel(l: Level) {
+    setSel((prev) => ({ ...prev, [l]: new Set() }));
   }
 
   const totals = useMemo(() => sumMetrics(rows), [rows]);
-  const creativeTotals = useMemo(() => sumMetrics(creatives), [creatives]);
 
   const prodLabel =
     productIds.length === 0
@@ -114,33 +132,57 @@ export default function CampaignsManager({
 
   function applyProducts(ids: string[]) {
     setProdOpen(false);
-    navigate({ prods: ids.length ? ids.join(",") : null });
+    setProductIds(ids);
   }
   function toggleProduct(id: string) {
-    const set = new Set(productIds);
-    if (set.has(id)) set.delete(id);
-    else set.add(id);
-    applyProducts([...set]);
+    const s = new Set(productIds);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    setProductIds([...s]);
   }
-
-  const nextLabel = level === "campaign" ? "Conjuntos de anúncios" : level === "adset" ? "Anúncios" : null;
 
   return (
     <div className="rounded-2xl border border-white/[.1] bg-[var(--noite-2)]">
-      {/* barra de níveis (abas estilo gerenciador) */}
+      {/* barra de níveis (abas com contador estilo gerenciador) */}
       <div className="flex flex-wrap items-center gap-1 border-b border-white/[.08] px-2 py-2">
-        {LEVELS.map((l) => (
-          <button
-            key={l.key}
-            onClick={() => goLevel(l.key)}
-            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
-              level === l.key ? "bg-eletrico/15 font-medium text-eletrico-cl" : "text-zinc-400 hover:bg-white/[.06]"
-            }`}
-          >
-            <span aria-hidden>{l.icon}</span> {l.label}
-          </button>
-        ))}
+        {LEVELS.map((l) => {
+          const count = sel[l.key].size;
+          return (
+            <button
+              key={l.key}
+              onClick={() => setLevel(l.key)}
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                level === l.key ? "bg-eletrico/15 font-medium text-eletrico-cl" : "text-zinc-400 hover:bg-white/[.06]"
+              }`}
+            >
+              <span aria-hidden>{l.icon}</span> {l.label}
+              {count > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-eletrico px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  {count} selec.
+                  <span
+                    role="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearLevel(l.key);
+                    }}
+                    className="ml-0.5 cursor-pointer opacity-80 hover:opacity-100"
+                  >
+                    ✕
+                  </span>
+                </span>
+              )}
+            </button>
+          );
+        })}
+
         <div className="ml-auto flex items-center gap-2">
+          {/* limite de linhas */}
+          <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="rounded-lg border border-white/[.18] bg-[var(--noite-2)] px-2 py-2 text-sm text-zinc-200">
+            {ROW_LIMITS.map((n) => (
+              <option key={n} value={n}>{n} linhas</option>
+            ))}
+          </select>
+
           {/* filtro de produto */}
           <div className="relative">
             <button onClick={() => setProdOpen((o) => !o)} className="inline-flex items-center gap-2 rounded-lg border border-white/[.18] px-3 py-2 text-sm text-zinc-200 hover:bg-white/[.06]">
@@ -166,31 +208,13 @@ export default function CampaignsManager({
         </div>
       </div>
 
-      {/* barra de seleção / filtro ativo */}
-      {(selected.size > 0 || parents.length > 0) && (
-        <div className="flex flex-wrap items-center gap-3 border-b border-white/[.08] bg-eletrico/[.06] px-4 py-2 text-xs">
-          {selected.size > 0 ? (
-            <>
-              <span className="font-medium text-eletrico-cl">{selected.size} selecionado(s)</span>
-              {nextLabel && <span className="text-zinc-400">— clique em <b className="text-zinc-200">{nextLabel}</b> para abrir os filhos</span>}
-              <button onClick={() => setSelected(new Set())} className="text-zinc-400 underline hover:text-zinc-200">limpar seleção</button>
-            </>
-          ) : (
-            <>
-              <span className="text-zinc-300">Filtrado por {parents.length} selecionado(s)</span>
-              <button onClick={() => navigate({ parents: null })} className="text-eletrico-cl underline">ver tudo</button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* tabela principal */}
-      <div className="overflow-x-auto">
+      {/* tabela */}
+      <div className={`overflow-x-auto transition-opacity ${loading ? "opacity-50" : ""}`}>
         <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="border-b border-white/[.08] text-left text-zinc-400">
               <th className="sticky left-0 z-20 bg-[var(--noite-2)] px-3 py-2.5">
-                <input type="checkbox" checked={rows.length > 0 && selected.size === rows.length} onChange={toggleAll} className="h-3.5 w-3.5 accent-eletrico" />
+                <input type="checkbox" checked={rows.length > 0 && sel[level].size === rows.length} onChange={toggleAll} className="h-3.5 w-3.5 accent-eletrico" />
               </th>
               <th className="sticky left-10 z-20 min-w-[320px] bg-[var(--noite-2)] px-3 py-2.5 font-medium">
                 {LEVELS.find((l) => l.key === level)?.label}
@@ -202,19 +226,18 @@ export default function CampaignsManager({
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td colSpan={activeCols.length + 2} className="px-4 py-6 text-center text-zinc-500">Sem dados no período.</td></tr>
+              <tr><td colSpan={activeCols.length + 2} className="px-4 py-6 text-center text-zinc-500">{loading ? "Carregando…" : "Sem dados no período."}</td></tr>
             ) : (
               rows.map((r) => {
-                const sel = selected.has(r.meta_id);
+                const isSel = sel[level].has(r.meta_id);
                 return (
-                  <tr key={r.meta_id} className={`border-b border-white/[.05] ${sel ? "bg-eletrico/[.08]" : "hover:bg-white/[.03]"}`}>
-                    <td className={`sticky left-0 z-10 px-3 py-3 ${sel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
-                      <input type="checkbox" checked={sel} onChange={() => toggleRow(r.meta_id)} className="h-3.5 w-3.5 accent-eletrico" />
+                  <tr key={r.meta_id} className={`border-b border-white/[.05] ${isSel ? "bg-eletrico/[.08]" : "hover:bg-white/[.03]"}`}>
+                    <td className={`sticky left-0 z-10 px-3 py-3 ${isSel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
+                      <input type="checkbox" checked={isSel} onChange={() => toggleRow(r.meta_id)} className="h-3.5 w-3.5 accent-eletrico" />
                     </td>
-                    <td className={`sticky left-10 z-10 min-w-[320px] max-w-[360px] px-3 py-3 ${sel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
+                    <td className={`sticky left-10 z-10 min-w-[320px] max-w-[380px] px-3 py-3 ${isSel ? "bg-[#191b2b]" : "bg-[var(--noite-2)]"}`}>
                       <div className="mb-1"><StatusPill status={r.effective_status} /></div>
                       <div className="truncate font-medium text-eletrico-cl" title={r.name ?? ""}>{r.name ?? "—"}</div>
-                      <div className="truncate text-[10px] text-zinc-500">ID {r.meta_id}</div>
                     </td>
                     {activeCols.map((c) => (
                       <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-200">{COLUMN_FMT[c](r)}</td>
@@ -238,49 +261,8 @@ export default function CampaignsManager({
         </table>
       </div>
 
-      {/* consolidado por criativo */}
-      <div className="border-t border-white/[.08] px-4 pb-1 pt-5">
-        <h3 className="mb-3 font-mono text-[11px] uppercase tracking-wider text-aco">Consolidado por criativo (mesmo nome entre campanhas)</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-max text-xs">
-          <thead>
-            <tr className="border-b border-white/[.08] text-left text-zinc-400">
-              <th className="sticky left-0 z-10 min-w-[320px] bg-[var(--noite-2)] px-3 py-2.5 font-medium">Criativo</th>
-              {activeCols.map((c) => (
-                <th key={c} className="whitespace-nowrap px-4 py-2.5 text-right font-medium">{COLUMN_LABEL[c]}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {creatives.length === 0 ? (
-              <tr><td colSpan={activeCols.length + 1} className="px-4 py-6 text-center text-zinc-500">Sem dados.</td></tr>
-            ) : (
-              creatives.map((r, i) => (
-                <tr key={`${r.name}-${i}`} className="border-b border-white/[.05] hover:bg-white/[.03]">
-                  <td className="sticky left-0 z-10 min-w-[320px] max-w-[360px] truncate bg-[var(--noite-2)] px-3 py-3 font-medium text-foreground" title={r.name ?? ""}>{r.name ?? "—"}</td>
-                  {activeCols.map((c) => (
-                    <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-zinc-200">{COLUMN_FMT[c](r)}</td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-          {creatives.length > 0 && (
-            <tfoot>
-              <tr className="border-t-2 border-white/[.12] bg-white/[.03] font-medium">
-                <td className="sticky left-0 z-10 bg-[#14141c] px-3 py-3 text-zinc-300">Resultados de {creatives.length} criativos</td>
-                {activeCols.map((c) => (
-                  <td key={c} className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-foreground">{COLUMN_FMT[c](creativeTotals)}</td>
-                ))}
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
-
       <p className="px-4 py-3 text-xs text-zinc-500">
-        Faturamento/compras usam o <b>nosso</b> last-click (só vendas rastreadas entram). Conjunto casa por ID (<code>utm_term</code>), campanha/criativo por nome. Vídeo fica vazio em anúncio estático.
+        Faturamento/compras usam o <b>nosso</b> last-click (só vendas rastreadas entram). Conjunto casa por ID (<code>utm_term</code>), campanha/criativo por nome. O consolidado por criativo agora fica na aba <b>Criativos</b>.
       </p>
     </div>
   );

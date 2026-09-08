@@ -4,13 +4,13 @@ import { getActiveProjectId } from "@/lib/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { resolveRange } from "@/lib/central";
 import { getPerpetuoFunnel } from "@/lib/funnel";
-import { getCampaignsTable } from "@/lib/campanhas";
+import { getCreativesConsolidated } from "@/lib/campanhas";
 import DateButton from "../date-button";
-import CampaignsManager from "./campaigns-manager";
+import CreativesTable from "./creatives-table";
 
 export const dynamic = "force-dynamic";
 
-export default async function CampanhasPage({
+export default async function CriativosPage({
   searchParams,
 }: {
   searchParams: Promise<{ from?: string; to?: string; dias?: string }>;
@@ -26,7 +26,7 @@ export default async function CampanhasPage({
   const [funnel, prods, rows] = await Promise.all([
     getPerpetuoFunnel(projectId),
     supabase.from("products").select("product_id, name, role").eq("project_id", projectId).order("role"),
-    getCampaignsTable(projectId, "campaign", null, null, from, to, 20),
+    getCreativesConsolidated(projectId, null, from, to),
   ]);
 
   const cfg = funnel?.dashboard_config ?? null;
@@ -35,11 +35,11 @@ export default async function CampanhasPage({
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-lg text-foreground">CAMPANHAS</h2>
+        <h2 className="font-display text-lg text-foreground">CRIATIVOS</h2>
         <DateButton />
       </div>
 
-      <CampaignsManager
+      <CreativesTable
         initialRows={rows}
         from={from}
         to={to}
