@@ -40,6 +40,7 @@ export interface CampaignRow extends Metrics {
 
 export interface CreativeRow extends Metrics {
   name: string | null;
+  ad_meta_id: string | null;
 }
 
 export async function getCampaignsTable(
@@ -70,6 +71,7 @@ export async function getCreativesConsolidated(
   productIds: string[] | null,
   from: string,
   to: string,
+  limit = 20,
 ): Promise<CreativeRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("creatives_consolidated", {
@@ -77,6 +79,7 @@ export async function getCreativesConsolidated(
     p_product_ids: productIds && productIds.length > 0 ? productIds : null,
     p_from: from,
     p_to: to,
+    p_limit: limit,
   });
   if (error) throw new Error(`creatives_consolidated: ${error.message}`);
   return (data ?? []) as CreativeRow[];
