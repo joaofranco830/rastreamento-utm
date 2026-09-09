@@ -19,7 +19,7 @@ export default async function ConfigurarFunilPage() {
     getProducts(projectId),
     getTrackingConfig(projectId),
     getPerpetuoFunnel(projectId),
-    supabase.from("ad_accounts").select("meta_account_id").eq("project_id", projectId).order("meta_account_id"),
+    supabase.from("ad_accounts").select("meta_account_id, name").eq("project_id", projectId).order("meta_account_id"),
   ]);
 
   return (
@@ -36,7 +36,7 @@ export default async function ConfigurarFunilPage() {
           Escolha quais contas (já conectadas no projeto) entram no investido/ROAS deste funil.
         </p>
         <AccountsFilter
-          accounts={(accounts ?? []) as { meta_account_id: string }[]}
+          accounts={(accounts ?? []) as { meta_account_id: string; name: string | null }[]}
           selected={funnel?.source_filters?.ad_accounts ?? []}
         />
       </section>

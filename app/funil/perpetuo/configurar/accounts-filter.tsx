@@ -6,6 +6,7 @@ import { saveDashboardAccountsAction } from "../funnel-actions";
 
 interface Account {
   meta_account_id: string;
+  name?: string | null;
   spend?: number;
 }
 
@@ -78,7 +79,10 @@ export default function AccountsFilter({
               onChange={() => toggle(a.meta_account_id)}
               className="accent-current"
             />
-            <span className="min-w-0 flex-1 font-mono text-xs">act_{a.meta_account_id}</span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm">{a.name?.trim() || `Conta ${a.meta_account_id}`}</span>
+              <span className="font-mono text-[11px] text-zinc-400">act_{a.meta_account_id}</span>
+            </span>
           </label>
         ))}
       </div>

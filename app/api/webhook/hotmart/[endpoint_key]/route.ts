@@ -38,10 +38,8 @@ export async function POST(
   try {
     hottok = await getProjectCredential(projectId, "hotmart", "hottok");
   } catch {
-    // cofre indisponível
+    // cofre indisponível — o handler valida e rejeita se não houver hottok
   }
-  // Fallback ao env só faz sentido para o Projeto Padrão (transição).
-  if (!hottok && projectId === 1) hottok = process.env.HOTMART_HOTTOK ?? null;
 
   return handleHotmartWebhook(req, projectId, hottok);
 }
