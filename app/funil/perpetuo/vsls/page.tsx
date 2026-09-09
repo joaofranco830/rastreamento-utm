@@ -20,7 +20,10 @@ export default async function VslsPage({
   if (!projectId) redirect("/configuracoes");
 
   const sp = await searchParams;
-  const { from, to } = resolveRange(sp);
+  // Sem filtro de data, a VSL abre com uma janela ampla (90d) para não parecer
+  // que "faltam dados" — o VSL costuma ter histórico de meses.
+  const hasRange = !!(sp.from && sp.to) || !!sp.dias;
+  const { from, to } = resolveRange(hasRange ? sp : { dias: "90" });
   const [data, hasKey] = await Promise.all([
     getVslData(projectId, from, to),
     hasCredential(projectId, "vturb", "api_key"),

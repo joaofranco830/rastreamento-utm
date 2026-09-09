@@ -55,8 +55,9 @@ function rowToRecord(projectId: number, playerId: string, dimension: string, val
     over_pitch: num(r.total_over_pitch),
     engagement_rate: num(r.engagement_rate),
     conversions: num(r.total_conversions),
-    amount_brl: num(r.total_amount_brl),
-    amount_usd: num(r.total_amount_usd),
+    // A API devolve os valores em CENTAVOS → converte para a unidade principal.
+    amount_brl: num(r.total_amount_brl) / 100,
+    amount_usd: num(r.total_amount_usd) / 100,
     play_rate: num(r.play_rate),
     conversion_rate: num(r.overall_conversion_rate),
     synced_at: new Date().toISOString(),
@@ -95,7 +96,7 @@ export async function refreshVturbPlayers(projectId: number): Promise<{ ok: bool
 
 export async function runVturbSync(projectId: number, opts?: { plan?: VturbPlan; sinceDays?: number }): Promise<VturbSyncResult> {
   const plan = opts?.plan ?? "basic";
-  const sinceDays = opts?.sinceDays ?? 120;
+  const sinceDays = opts?.sinceDays ?? 365;
   const token = await getVturbToken(projectId).catch(() => null);
   if (!token) return { ok: false, skipped: "no_credentials" };
 
