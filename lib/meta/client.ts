@@ -2,8 +2,8 @@ import "server-only";
 
 /**
  * Cliente da Meta Marketing/Graph API (server-only). O token (System User) e o
- * ad account vêm de variáveis de ambiente — NUNCA no client.
- * Versão da API fixada (atualizar conscientemente).
+ * ad account vêm SEMPRE do cofre de credenciais POR PROJETO — nunca de env
+ * global, nunca no client. Versão da API fixada (atualizar conscientemente).
  */
 const GRAPH_VERSION = "v25.0";
 const BASE = `https://graph.facebook.com/${GRAPH_VERSION}`;
@@ -20,13 +20,6 @@ export interface MetaCreds {
 export function normAccount(a: string): string {
   const t = (a ?? "").trim();
   return t.startsWith("act_") ? t : `act_${t}`;
-}
-
-/** Credenciais do Meta do `.env` (usadas pelo Projeto Padrão/cliente enquanto não migram pro cofre). */
-export function envMetaCreds(): MetaCreds | null {
-  const t = process.env.META_ACCESS_TOKEN;
-  const a = process.env.META_AD_ACCOUNT_ID;
-  return t && a ? { token: t, accounts: [a] } : null;
 }
 
 /**

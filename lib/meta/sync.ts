@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import {
   fetchInsights,
   fetchEntityStatuses,
+  listAdAccounts,
   extractAction,
   extractActionTotal,
   extractMetric,
@@ -54,6 +55,15 @@ async function syncProjectMeta(
   let ads = 0;
   let insights = 0;
 
+  // Nome das contas que o token enxerga (para exibir o NOME, não só o id).
+  // Best-effort: se falhar, segue sem nome.
+  const nameById = new Map<string, string>();
+  try {
+    for (const a of await listAdAccounts(creds.token)) nameById.set(a.id, a.name);
+  } catch {
+    // sem nomes desta vez
+  }
+
   // O projeto pode ter VÁRIAS contas de anúncio — sincroniza cada uma e soma.
   for (const account of creds.accounts) {
     const rows = await fetchInsights(creds.token, account, sinceDays);
@@ -66,7 +76,7 @@ async function syncProjectMeta(
     ]);
 
     // hierarquia: upsert ad_account → campaigns → adsets → ads (resolve FKs)
-    const accId = await upsertAdAccount(supa, projectId, account);
+    const accId = await upsertAdAccount(supa, projectId, account, nameById.get(normAccount(account).replace(/^act_/, "")) ?? null);
     const campMap = await upsertLevel(
       supa,
       "campaigns",
@@ -183,17 +193,16 @@ export async function runMetaSyncForProject(projectId: number, sinceDays = 14): 
 }
 
 /**
- * Sincroniza TODOS os projetos que têm credenciais do Meta (cron). Adquire o lock
- * uma vez e itera; se um projeto falhar, os outros seguem. O Projeto Padrão (1)
- * sempre entra (cai no .env quando não há credencial no cofre).
+ * Sincroniza TODOS os projetos que têm Meta conectado no COFRE (cron). Adquire o
+ * lock uma vez por projeto e itera; se um falhar, os outros seguem. Sem env
+ * global: um projeto sem credencial no cofre é simplesmente pulado.
  */
 export async function runMetaSyncAll(sinceDays = 14): Promise<SyncResult[]> {
   const supa = getSupabaseAdmin();
 
-  // projetos ativos + o Padrão (1) sempre
   const { data: projs, error } = await supa.from("projects").select("id").order("id");
   if (error) throw error;
-  const ids = new Set<number>([1]);
+  const ids = new Set<number>();
   for (const p of projs ?? []) ids.add(p.id as number);
 
   const results: SyncResult[] = [];
@@ -226,11 +235,13 @@ export async function runMetaSyncAll(sinceDays = 14): Promise<SyncResult[]> {
 
 // ---- helpers ----
 
-async function upsertAdAccount(supa: Supa, projectId: number, account: string): Promise<number> {
+async function upsertAdAccount(supa: Supa, projectId: number, account: string, name: string | null): Promise<number> {
   const meta = normAccount(account).replace(/^act_/, "");
+  const row: Record<string, unknown> = { meta_account_id: meta, project_id: projectId };
+  if (name) row.name = name; // não sobrescreve com null se o nome não veio nesta rodada
   const { data, error } = await supa
     .from("ad_accounts")
-    .upsert({ meta_account_id: meta, project_id: projectId }, { onConflict: "meta_account_id" })
+    .upsert(row, { onConflict: "project_id,meta_account_id" })
     .select("id")
     .single();
   if (error) throw error;
@@ -261,7 +272,7 @@ async function upsertLevel(
   if (values.length === 0) return map;
   const { data, error } = await supa
     .from(table)
-    .upsert(values, { onConflict: "meta_id" })
+    .upsert(values, { onConflict: "project_id,meta_id" })
     .select("id,meta_id");
   if (error) throw error;
   for (const row of data ?? []) map.set(row.meta_id as string, row.id as number);

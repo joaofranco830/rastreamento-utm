@@ -14,6 +14,52 @@ export interface AdAccountOption {
 }
 
 /**
+ * MIGRAÇÃO ÚNICA (transição): move as credenciais do Meta que ainda estejam em
+ * variáveis de ambiente GLOBAIS (.env) para o COFRE do projeto ativo, para
+ * eliminar o segredo global. Reaproveita o valor sem exigir o token em mãos.
+ * Depois de rodar, apague META_ACCESS_TOKEN/META_AD_ACCOUNT_ID da Vercel.
+ * Só admin/owner. Idempotente: se o cofre já tem, não sobrescreve.
+ */
+export async function migrateEnvMetaToVaultAction(): Promise<{ ok: boolean; migrated?: boolean; account?: string; synced?: boolean; error?: string }> {
+  const projectId = await getActiveProjectId();
+  if (!projectId) return { ok: false, error: "Sem projeto ativo." };
+  try {
+    await requireRole(projectId, ["admin"]);
+  } catch {
+    return { ok: false, error: "Só admin/owner." };
+  }
+
+  const envToken = (process.env.META_ACCESS_TOKEN ?? "").trim();
+  const envAccount = (process.env.META_AD_ACCOUNT_ID ?? "").trim().replace(/^act_/, "");
+  if (!envToken || !envAccount) {
+    return { ok: true, migrated: false, error: "Nada para migrar: não há Meta no .env global (ok, pode apagar as variáveis da Vercel)." };
+  }
+
+  // Não sobrescreve credencial já existente no cofre do projeto.
+  const existing = await getProjectCredential(projectId, "meta", "token").catch(() => null);
+  if (existing) return { ok: true, migrated: false, error: "Este projeto já tem Meta no cofre — nada a migrar." };
+
+  try {
+    await setProjectCredential(projectId, "meta", "token", envToken);
+    await setProjectCredential(projectId, "meta", "account_id", envAccount);
+  } catch {
+    return { ok: false, error: "Falha ao cifrar/salvar no cofre." };
+  }
+
+  let synced = false;
+  try {
+    const r = await runMetaSyncForProject(projectId, 365);
+    synced = r.ok;
+  } catch {
+    synced = false;
+  }
+
+  revalidatePath("/configuracoes");
+  revalidatePath("/configuracoes/meta");
+  return { ok: true, migrated: true, account: envAccount, synced };
+}
+
+/**
  * Passo "Testar conexão" do wizard: valida o token chamando /me/adaccounts e
  * devolve as contas de anúncio que ele enxerga. NÃO salva nada — só descoberta.
  * Só admin/owner do projeto ativo.

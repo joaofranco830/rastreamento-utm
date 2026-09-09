@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { getActiveProjectId, getVisibleProjects } from "@/lib/tenant";
 import { getProjectCredential } from "@/lib/credentials";
 import { MetaWizard } from "./wizard";
+import { MigrateEnvMeta } from "./migrate-env";
 import { DisconnectMeta } from "./disconnect";
 import { ManageAccounts } from "./manage-accounts";
 import { SyncHistory } from "./sync-history";
@@ -67,7 +68,10 @@ export default async function MetaConnectPage() {
             </details>
           </>
         ) : (
-          <MetaWizard alreadyConnected={connected} />
+          <>
+            <MigrateEnvMeta />
+            <MetaWizard alreadyConnected={connected} />
+          </>
         )}
 
         <p className="mt-6 text-xs text-zinc-400">
