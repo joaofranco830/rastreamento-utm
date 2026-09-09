@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CampaignRow, Level, Metrics } from "@/lib/campanhas";
+import { vslFields, type VslJoinMaps } from "@/lib/vturb/join";
 import { COLUMN_FMT, COLUMN_LABEL, orderedColumns } from "./columns";
 import ColumnsConfig from "./columns-config";
 import RowLimit from "./row-limit";
@@ -28,6 +29,7 @@ const EMPTY_METRICS: Metrics = {
   net_revenue: 0, rev_principal: 0, refunded_value: 0, refund_count: 0,
   purchases_total: 0, purchases_principal: 0, reverted: 0, paid: 0,
   unique_customers: 0, pageviews: 0, checkouts: 0,
+  vsl_viewed: 0, vsl_plays: 0, vsl_clicked: 0, vsl_over_pitch: 0, vsl_conversions: 0, vsl_amount_brl: 0, vsl_eng_weight: 0,
 };
 
 function sumMetrics(rows: Metrics[]): Metrics {
@@ -61,6 +63,7 @@ export default function CampaignsManager({
   products,
   cols,
   presets,
+  vsl,
 }: {
   initialRows: CampaignRow[];
   from: string;
@@ -68,6 +71,7 @@ export default function CampaignsManager({
   products: Product[];
   cols: string[] | null;
   presets: { name: string; cols: string[] }[];
+  vsl: VslJoinMaps;
 }) {
   const [level, setLevel] = useState<Level>("campaign");
   const [sel, setSel] = useState<Sel>({ campaign: new Set(), adset: new Set(), creative: new Set() });
@@ -123,7 +127,13 @@ export default function CampaignsManager({
     setSel((prev) => ({ ...prev, [l]: new Set() }));
   }
 
-  const totals = useMemo(() => sumMetrics(rows), [rows]);
+  // Casa o VSL por nome: campanha↔utm_campaign, anúncio↔utm_content. Conjunto não tem VSL.
+  const vslMap = level === "campaign" ? vsl.byCampaign : level === "creative" ? vsl.byContent : null;
+  const displayRows = useMemo(
+    () => rows.map((r) => ({ ...r, ...vslFields(r.name, vslMap) })),
+    [rows, vslMap],
+  );
+  const totals = useMemo(() => sumMetrics(displayRows), [displayRows]);
 
   const prodLabel =
     productIds.length === 0
@@ -225,10 +235,10 @@ export default function CampaignsManager({
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {displayRows.length === 0 ? (
                 <tr><td colSpan={activeCols.length + 2} className="px-4 py-10 text-center text-zinc-400">{loading ? "" : "Sem dados no período."}</td></tr>
               ) : (
-                rows.map((r) => {
+                displayRows.map((r) => {
                   const isSel = sel[level].has(r.meta_id);
                   return (
                     <tr key={r.meta_id} className={`border-b border-white/[.05] ${isSel ? "bg-eletrico/[.08]" : "hover:bg-white/[.03]"}`}>
@@ -266,7 +276,7 @@ export default function CampaignsManager({
       </div>
 
       <p className="px-4 py-3 text-xs text-zinc-400">
-        Faturamento/compras usam o <b>nosso</b> last-click (só vendas rastreadas entram). Conjunto casa por ID (<code>utm_term</code>), campanha/criativo por nome. O consolidado por criativo agora fica na aba <b>Criativos</b>.
+        Faturamento/compras usam o <b>nosso</b> last-click (só vendas rastreadas entram). Conjunto casa por ID (<code>utm_term</code>), campanha/criativo por nome. As colunas <b>(VSL)</b> vêm do VTurb, casadas por nome (campanha↔<code>utm_campaign</code>, anúncio↔<code>utm_content</code>); sem correspondência aparecem como “—” e o nível de conjunto não tem VSL. O consolidado por criativo agora fica na aba <b>Criativos</b>.
       </p>
     </div>
   );

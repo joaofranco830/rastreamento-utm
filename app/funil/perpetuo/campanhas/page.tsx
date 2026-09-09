@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { resolveRange } from "@/lib/central";
 import { getPerpetuoFunnel } from "@/lib/funnel";
 import { getCampaignsTable } from "@/lib/campanhas";
+import { getVslJoinMaps } from "@/lib/vturb/read";
 import DateButton from "../date-button";
 import CampaignsManager from "./campaigns-manager";
 
@@ -23,10 +24,11 @@ export default async function CampanhasPage({
   const { from, to } = resolveRange(sp);
 
   const supabase = await createClient();
-  const [funnel, prods, rows] = await Promise.all([
+  const [funnel, prods, rows, vsl] = await Promise.all([
     getPerpetuoFunnel(projectId),
     supabase.from("products").select("product_id, name, role").eq("project_id", projectId).order("role"),
     getCampaignsTable(projectId, "campaign", null, null, from, to, 20),
+    getVslJoinMaps(projectId, from, to),
   ]);
 
   const cfg = funnel?.dashboard_config ?? null;
@@ -46,6 +48,7 @@ export default async function CampanhasPage({
         products={products}
         cols={cfg?.campaign_columns ?? null}
         presets={cfg?.campaign_presets ?? []}
+        vsl={vsl}
       />
     </>
   );

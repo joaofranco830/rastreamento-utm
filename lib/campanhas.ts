@@ -30,6 +30,15 @@ export interface Metrics {
   unique_customers: number;
   pageviews: number;
   checkouts: number;
+  // Dados do VSL (VTurb), casados por nome (campanha=utm_campaign, criativo=utm_content).
+  // Preenchidos no client via vslFields(); ausentes → 0. Ver lib/vturb/join.ts.
+  vsl_viewed: number;
+  vsl_plays: number;
+  vsl_clicked: number;
+  vsl_over_pitch: number;
+  vsl_conversions: number;
+  vsl_amount_brl: number;
+  vsl_eng_weight: number; // soma de (engajamento_fração × views)
 }
 
 export interface CampaignRow extends Metrics {
