@@ -127,8 +127,12 @@ export default function CampaignsManager({
     setSel((prev) => ({ ...prev, [l]: new Set() }));
   }
 
-  // Casa o VSL por nome: campanha↔utm_campaign, anúncio↔utm_content. Conjunto não tem VSL.
-  const vslMap = level === "campaign" ? vsl.byCampaign : level === "creative" ? vsl.byContent : null;
+  // VSL só no nível de CAMPANHA (join por utm_campaign, escopado à campanha).
+  // Nos níveis de conjunto/anúncio o VTurb não cruza campanha×criativo — o número
+  // do criativo seria o total dele em TODAS as campanhas (vazaria de outras
+  // campanhas), então não atribuímos VSL aqui. O VSL por criativo (consolidado
+  // entre campanhas) fica na aba Criativos.
+  const vslMap = level === "campaign" ? vsl.byCampaign : null;
   const displayRows = useMemo(
     () => rows.map((r) => ({ ...r, ...vslFields(r.name, vslMap) })),
     [rows, vslMap],
@@ -276,7 +280,7 @@ export default function CampaignsManager({
       </div>
 
       <p className="px-4 py-3 text-xs text-zinc-400">
-        Faturamento/compras usam o <b>nosso</b> last-click (só vendas rastreadas entram). Conjunto casa por ID (<code>utm_term</code>), campanha/criativo por nome. As colunas <b>(VSL)</b> vêm do VTurb, casadas por nome (campanha↔<code>utm_campaign</code>, anúncio↔<code>utm_content</code>); sem correspondência aparecem como “—” e o nível de conjunto não tem VSL. O consolidado por criativo agora fica na aba <b>Criativos</b>.
+        Faturamento/compras usam o <b>nosso</b> last-click (só vendas rastreadas entram). Conjunto casa por ID (<code>utm_term</code>), campanha/criativo por nome. As colunas <b>(VSL)</b> vêm do VTurb e aparecem <b>só no nível de campanha</b> (casadas por <code>utm_campaign</code>); nos níveis de conjunto e anúncio ficam como “—”, porque o VTurb não cruza campanha×criativo — o número do criativo seria o total dele em todas as campanhas. O VSL por criativo (consolidado entre campanhas) fica na aba <b>Criativos</b>.
       </p>
     </div>
   );
