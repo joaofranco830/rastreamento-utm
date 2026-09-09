@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CreativeRow, Metrics } from "@/lib/campanhas";
+import { vslFields, type VslJoinMaps } from "@/lib/vturb/join";
 import { COLUMN_FMT, COLUMN_LABEL, orderedColumns } from "../campanhas/columns";
 import ColumnsConfig from "../campanhas/columns-config";
 import RowLimit from "../campanhas/row-limit";
@@ -21,6 +22,7 @@ const EMPTY: Metrics = {
   net_revenue: 0, rev_principal: 0, refunded_value: 0, refund_count: 0,
   purchases_total: 0, purchases_principal: 0, reverted: 0, paid: 0,
   unique_customers: 0, pageviews: 0, checkouts: 0,
+  vsl_viewed: 0, vsl_plays: 0, vsl_clicked: 0, vsl_over_pitch: 0, vsl_conversions: 0, vsl_amount_brl: 0, vsl_eng_weight: 0,
 };
 function sumMetrics(rows: Metrics[]): Metrics {
   const t = { ...EMPTY };
@@ -35,6 +37,7 @@ export default function CreativesTable({
   products,
   cols,
   presets,
+  vsl,
 }: {
   initialRows: CreativeRow[];
   from: string;
@@ -42,6 +45,7 @@ export default function CreativesTable({
   products: Product[];
   cols: string[] | null;
   presets: { name: string; cols: string[] }[];
+  vsl: VslJoinMaps;
 }) {
   const [productIds, setProductIds] = useState<string[]>([]);
   const [limit, setLimit] = useState(20);
@@ -74,7 +78,12 @@ export default function CreativesTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productKey, limit, from, to]);
 
-  const totals = useMemo(() => sumMetrics(rows), [rows]);
+  // Criativo casa com o VSL por nome (utm_content).
+  const displayRows = useMemo(
+    () => rows.map((r) => ({ ...r, ...vslFields(r.name, vsl.byContent) })),
+    [rows, vsl],
+  );
+  const totals = useMemo(() => sumMetrics(displayRows), [displayRows]);
 
   const prodLabel =
     productIds.length === 0
@@ -135,10 +144,10 @@ export default function CreativesTable({
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {displayRows.length === 0 ? (
                 <tr><td colSpan={activeCols.length + 1} className="px-4 py-10 text-center text-zinc-400">{loading ? "" : "Sem dados."}</td></tr>
               ) : (
-                rows.map((r, i) => (
+                displayRows.map((r, i) => (
                   <tr key={`${r.name}-${i}`} className="border-b border-white/[.05] hover:bg-white/[.03]">
                     <td className="sticky left-0 z-10 min-w-[320px] max-w-[400px] bg-[var(--noite-2)] px-3 py-3">
                       <div className="flex items-center gap-2">
@@ -167,6 +176,9 @@ export default function CreativesTable({
           </table>
         </div>
       </div>
+      <p className="px-4 py-3 text-xs text-zinc-400">
+        As colunas <b>(VSL)</b> vêm do VTurb, casadas por nome do criativo (<code>utm_content</code>); sem correspondência aparecem como “—”.
+      </p>
     </div>
   );
 }

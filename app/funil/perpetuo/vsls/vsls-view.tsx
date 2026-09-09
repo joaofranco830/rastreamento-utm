@@ -20,6 +20,24 @@ const secs = (v: number) => {
   return m > 0 ? `${m}m${String(s % 60).padStart(2, "0")}s` : `${s}s`;
 };
 
+/** Soma uma lista de linhas num total, RECALCULANDO as taxas (não somando) —
+ * mesma lógica do read.ts. Engajamento é média ponderada por views. */
+function sumMetrics(rows: VslMetrics[]): VslMetrics {
+  let viewed = 0, plays = 0, finished = 0, clicked = 0, over_pitch = 0, conversions = 0, amount_brl = 0, engW = 0;
+  for (const r of rows) {
+    viewed += r.viewed; plays += r.plays; finished += r.finished; clicked += r.clicked;
+    over_pitch += r.over_pitch; conversions += r.conversions; amount_brl += r.amount_brl;
+    engW += r.engagement_rate * r.viewed;
+  }
+  return {
+    viewed, plays, finished, clicked, over_pitch, conversions, amount_brl,
+    engagement_rate: viewed > 0 ? engW / viewed : 0,
+    play_rate: viewed > 0 ? (plays / viewed) * 100 : 0,
+    conversion_rate: plays > 0 ? (conversions / plays) * 100 : 0,
+    over_pitch_rate: viewed > 0 ? (over_pitch / viewed) * 100 : 0,
+  };
+}
+
 type Tab = "videos" | "campaign" | "content";
 const TABS: { key: Tab; label: string }[] = [
   { key: "videos", label: "Por vídeo" },
@@ -234,8 +252,30 @@ function VideosTable({ rows }: { rows: VslVideo[] }) {
             </tr>
           ))}
         </tbody>
+        <TotalFoot rows={rows} label={`Total — ${rows.length} VSL(s)`} />
       </table>
     </div>
+  );
+}
+
+/** Barra de somatório (tfoot sticky) para as tabelas de VSL. */
+function TotalFoot({ rows, label }: { rows: VslMetrics[]; label: string }) {
+  if (rows.length === 0) return null;
+  const t = sumMetrics(rows);
+  return (
+    <tfoot>
+      <tr className="font-medium">
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-zinc-200">{label}</td>
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-right tabular-nums text-foreground">{inteiro(t.viewed)}</td>
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-right tabular-nums text-zinc-300">{pct1(t.play_rate)}</td>
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-right tabular-nums text-zinc-300">{pct1(t.engagement_rate)}</td>
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-right tabular-nums text-zinc-300">{pct1(t.over_pitch_rate)}</td>
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-right tabular-nums text-zinc-300">{inteiro(t.clicked)}</td>
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-right tabular-nums font-display text-foreground">{inteiro(t.conversions)}</td>
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-right tabular-nums text-lima">{pct1(t.conversion_rate)}</td>
+        <td className="sticky bottom-0 z-10 border-t-2 border-white/[.14] bg-[#14141c] px-3 py-3 text-right tabular-nums text-foreground">{brl(t.amount_brl)}</td>
+      </tr>
+    </tfoot>
   );
 }
 
@@ -258,6 +298,7 @@ function BreakdownTable({ rows, label }: { rows: VslBreakdownRow[]; label: strin
             </tr>
           ))}
         </tbody>
+        <TotalFoot rows={rows} label={`Total — ${rows.length} ${label.toLowerCase()}(s)`} />
       </table>
     </div>
   );

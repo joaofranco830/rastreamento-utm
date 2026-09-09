@@ -8,6 +8,8 @@ const num = (v: unknown): number => Number(v) || 0;
 const ratio = (a: number, b: number): number | null => (b > 0 ? a / b : null);
 const brlN = (x: number | null): string => (x == null ? "—" : brl(x));
 const cpm = (spend: number, impr: number): number | null => (impr > 0 ? (spend / impr) * 1000 : null);
+/** Há VSL casada nesta linha? (0 views = sem correspondência → mostra "—"). */
+const hasVsl = (r: Metrics): boolean => num(r.vsl_viewed) > 0;
 
 export interface ColDef {
   key: string;
@@ -69,9 +71,20 @@ export const COLUMN_CATALOG: ColDef[] = [
   { key: "connect_rate", label: "Connect rate", group: "Funil", fmt: (r) => pct(ratio(num(r.pageviews), num(r.link_clicks))) },
   { key: "conv_ckt", label: "Conv. checkout", group: "Funil", fmt: (r) => pct(ratio(num(r.purchases_total), num(r.checkouts))) },
   { key: "conv_funil", label: "Conv. funil", group: "Funil", fmt: (r) => pct(ratio(num(r.purchases_total), num(r.pageviews))) },
+
+  // VSL (VTurb) — casado por nome. Campanha usa utm_campaign; criativo, utm_content.
+  // Sem correspondência (ex.: nível de conjunto) mostra "—".
+  { key: "vsl_views", label: "Views (VSL)", group: "VSL", fmt: (r) => (hasVsl(r) ? inteiro(r.vsl_viewed) : "—") },
+  { key: "vsl_play_rate", label: "Play rate (VSL)", group: "VSL", fmt: (r) => pct(ratio(num(r.vsl_plays), num(r.vsl_viewed))) },
+  { key: "vsl_engajamento", label: "Engajamento (VSL)", group: "VSL", fmt: (r) => pct(ratio(num(r.vsl_eng_weight), num(r.vsl_viewed))) },
+  { key: "vsl_over_pitch", label: "Retenção pitch (VSL)", group: "VSL", fmt: (r) => pct(ratio(num(r.vsl_over_pitch), num(r.vsl_viewed))) },
+  { key: "vsl_clicks", label: "Cliques (VSL)", group: "VSL", fmt: (r) => (hasVsl(r) ? inteiro(r.vsl_clicked) : "—") },
+  { key: "vsl_conversions", label: "Conversões (VSL)", group: "VSL", fmt: (r) => (hasVsl(r) ? inteiro(r.vsl_conversions) : "—") },
+  { key: "vsl_conv_rate", label: "Conv. rate (VSL)", group: "VSL", fmt: (r) => pct(ratio(num(r.vsl_conversions), num(r.vsl_plays))) },
+  { key: "vsl_amount", label: "Receita (VSL)", group: "VSL", fmt: (r) => (hasVsl(r) ? brl(r.vsl_amount_brl) : "—") },
 ];
 
-export const COLUMN_GROUPS = ["Resultado", "Produtos", "Reembolso", "LTV", "Tráfego", "Vídeo", "Funil"] as const;
+export const COLUMN_GROUPS = ["Resultado", "Produtos", "Reembolso", "LTV", "Tráfego", "Vídeo", "Funil", "VSL"] as const;
 
 export const COLUMN_LABEL: Record<string, string> = Object.fromEntries(COLUMN_CATALOG.map((c) => [c.key, c.label]));
 export const COLUMN_FMT: Record<string, (r: Metrics) => string> = Object.fromEntries(
@@ -90,6 +103,8 @@ export const DEFAULT_COLUMNS = [
   "refunded_value",
   "unique_customers",
   "link_clicks",
+  "vsl_conversions",
+  "vsl_amount",
 ];
 
 /** Ordem/seleção efetiva das colunas. */

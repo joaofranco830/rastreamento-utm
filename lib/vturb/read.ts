@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { normUtmKey, type VslJoin, type VslJoinMaps } from "./join";
 
 /**
  * Leitura do Analytics do VSL (VTurb) por projeto, via sessão (RLS). Agrega as
@@ -119,8 +120,10 @@ export async function getVslData(projectId: number, from: string, to: string): P
     })
     .sort((a, b) => b.conversions - a.conversions || b.viewed - a.viewed);
 
+  // Funde duplicatas de encoding ('+' vs espaço) exibindo o rótulo legível.
+  const displayUtm = (s: string) => s.replace(/\+/g, " ").replace(/\s+/g, " ").trim();
   const breakdown = (dim: string): VslBreakdownRow[] =>
-    [...groupBy(daily.filter((d) => d.dimension === dim && d.value), (r) => r.value).entries()]
+    [...groupBy(daily.filter((d) => d.dimension === dim && d.value), (r) => displayUtm(r.value)).entries()]
       .map(([value, rows]) => ({ value, ...aggregate(rows) }))
       .sort((a, b) => b.conversions - a.conversions || b.viewed - a.viewed);
 
@@ -132,4 +135,44 @@ export async function getVslData(projectId: number, from: string, to: string): P
     lastSync,
     hasKey: true,
   };
+}
+
+/**
+ * Mapas de VSL (por campanha e por criativo) normalizados por NOME, para casar
+ * com as linhas das telas Campanhas/Criativos. Agrega as linhas diárias de
+ * vturb_daily (dimension='utm_campaign'/'utm_content') somando os brutos e
+ * ponderando o engajamento por views. As chaves saem normalizadas (normUtmKey).
+ */
+export async function getVslJoinMaps(projectId: number, from: string, to: string): Promise<VslJoinMaps> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("vturb_daily")
+    .select("dimension,value,viewed,plays,clicked,over_pitch,engagement_rate,conversions,amount_brl")
+    .eq("project_id", projectId)
+    .in("dimension", ["utm_campaign", "utm_content"])
+    .gte("date", from)
+    .lte("date", to);
+
+  const rows = (data ?? []) as (DailyRow & { dimension: string })[];
+  const byCampaign: Record<string, VslJoin> = {};
+  const byContent: Record<string, VslJoin> = {};
+
+  for (const r of rows) {
+    if (!r.value) continue;
+    const key = normUtmKey(String(r.value));
+    if (!key) continue;
+    const target = r.dimension === "utm_campaign" ? byCampaign : byContent;
+    const acc: VslJoin = target[key] ?? { viewed: 0, plays: 0, clicked: 0, over_pitch: 0, conversions: 0, amount_brl: 0, eng_weight: 0 };
+    const viewed = n(r.viewed);
+    acc.viewed += viewed;
+    acc.plays += n(r.plays);
+    acc.clicked += n(r.clicked);
+    acc.over_pitch += n(r.over_pitch);
+    acc.conversions += n(r.conversions);
+    acc.amount_brl += n(r.amount_brl);
+    // engagement_rate vem em 0–100 → guarda como fração ponderada por views.
+    acc.eng_weight += (n(r.engagement_rate) / 100) * viewed;
+    target[key] = acc;
+  }
+  return { byCampaign, byContent };
 }
