@@ -171,10 +171,12 @@ export async function POST(req: Request): Promise<Response> {
     const supa = getSupabaseAdmin();
     const nowIso = new Date().toISOString();
 
-    // Resolve o projeto pela pixel_key (RAS-01/02). Ausente/inválida -> Padrão (1).
-    // O t.js "pelado" não envia pixel_key -> cai no Projeto Padrão (backward-compat).
-    let projectId = 1;
+    // Resolve o projeto pela pixel_key (RAS-01/02). ISOLAMENTO POR PROJETO:
+    // sem pixel_key válida NÃO dá para saber a qual projeto o dado pertence —
+    // então descartamos (nada de default global para um projeto). Os funis devem
+    // embutir o pixel do projeto: /p/{pixel_key}/t.js.
     const pixelKey = typeof p.pixel_key === "string" ? p.pixel_key : null;
+    let projectId: number | null = null;
     if (pixelKey) {
       const { data: px } = await supa
         .from("project_pixels")
@@ -183,19 +185,23 @@ export async function POST(req: Request): Promise<Response> {
         .maybeSingle();
       if (px && px.active) projectId = px.project_id as number;
     }
+    if (projectId === null) return noContent(); // sem projeto resolvível -> descarta
 
     // 5) visitors: cria se novo (preserva first_touch); sempre atualiza last_touch.
+    // Chave composta (project_id, visitor_id): o MESMO visitor_id pode existir em
+    // projetos diferentes sem colidir.
     const { error: insErr } = await supa.from("visitors").upsert(
       { visitor_id: visitorId, first_touch: nowIso, last_touch: nowIso, project_id: projectId },
-      { onConflict: "visitor_id", ignoreDuplicates: true },
+      { onConflict: "project_id,visitor_id", ignoreDuplicates: true },
     );
     if (insErr) throw insErr;
 
-    // last_touch sempre; sinais só quando presentes (não sobrescreve com null —
-    // ex.: um pageview sem fbp não apaga o fbp já capturado antes).
+    // last_touch sempre; sinais só quando presentes (não sobrescreve com null).
+    // Escopado por projeto (não toca o visitante homônimo de outro projeto).
     const { error: updErr } = await supa
       .from("visitors")
       .update({ last_touch: nowIso, ...signals })
+      .eq("project_id", projectId)
       .eq("visitor_id", visitorId);
     if (updErr) throw updErr;
 
@@ -204,6 +210,7 @@ export async function POST(req: Request): Promise<Response> {
       const { data: last } = await supa
         .from("touchpoints")
         .select("utm_source,utm_medium,utm_campaign,utm_term,utm_content,fbclid")
+        .eq("project_id", projectId)
         .eq("visitor_id", visitorId)
         .order("ts", { ascending: false })
         .limit(1)

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getActiveProjectId, getVisibleProjects } from "@/lib/tenant";
 import { getProjectCredential } from "@/lib/credentials";
+import { createClient } from "@/lib/supabase/server";
 import { MetaWizard } from "./wizard";
 import { MigrateEnvMeta } from "./migrate-env";
 import { DisconnectMeta } from "./disconnect";
@@ -28,6 +29,15 @@ export default async function MetaConnectPage() {
     .filter(Boolean);
   const connected = !!(token && accountList.length > 0);
 
+  // Nome das contas (para exibir "Nome" em vez de só o act_id).
+  const supabase = await createClient();
+  const { data: accRows } = await supabase
+    .from("ad_accounts")
+    .select("meta_account_id, name")
+    .eq("project_id", projectId);
+  const nameById = new Map((accRows ?? []).map((a) => [a.meta_account_id as string, (a.name as string | null) ?? null]));
+  const accountLabel = (id: string) => nameById.get(id)?.trim() || `Conta ${id}`;
+
   return (
     <section>
       <h2 className="mb-1 text-lg font-medium">Integração Meta (Business Manager)</h2>
@@ -44,8 +54,8 @@ export default async function MetaConnectPage() {
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                     BM conectada ✓ — {accountList.length} {accountList.length === 1 ? "conta" : "contas"}
                   </p>
-                  <p className="mt-0.5 font-mono text-xs text-zinc-400">
-                    {accountList.map((a) => `act_${a}`).join(", ")}
+                  <p className="mt-0.5 text-xs text-zinc-400">
+                    {accountList.map(accountLabel).join(", ")}
                   </p>
                 </div>
                 <DisconnectMeta />

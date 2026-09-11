@@ -79,10 +79,10 @@ export async function importCsvAction(
   let inserted = 0;
   for (let i = 0; i < orders.length; i += 500) {
     const chunk = orders.slice(i, i + 500);
-    // Dedup por transaction (unique global): linhas já existentes são ignoradas.
+    // Dedup por (project_id, transaction): linhas já existentes NESTE projeto são ignoradas.
     const { data, error } = await admin
       .from("orders")
-      .upsert(chunk, { onConflict: "transaction", ignoreDuplicates: true })
+      .upsert(chunk, { onConflict: "project_id,transaction", ignoreDuplicates: true })
       .select("id");
     if (error) return { ok: false, error: error.message };
     inserted += data?.length ?? 0;
