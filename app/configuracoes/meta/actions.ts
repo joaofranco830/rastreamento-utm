@@ -6,7 +6,7 @@ import { getActiveProjectId } from "@/lib/tenant";
 import { setProjectCredential, getProjectCredential } from "@/lib/credentials";
 import { listAdAccounts } from "@/lib/meta/client";
 import { parseAccounts } from "@/lib/meta/creds";
-import { runMetaSyncForProject } from "@/lib/meta/sync";
+import { runMetaSyncForProject, persistAdAccountNames } from "@/lib/meta/sync";
 
 export interface AdAccountOption {
   id: string; // sem o prefixo act_ (ex.: 555908086246166)
@@ -127,6 +127,9 @@ export async function connectMetaAction(
     return { ok: false, error: "Falha ao cifrar/salvar (verifique a chave do cofre)." };
   }
 
+  // Persiste o NOME das contas já (não espera o sync de insights).
+  await persistAdAccountNames(projectId, tok, accs).catch(() => {});
+
   // primeiro sync mais fundo (90 dias) para trazer o histórico; best-effort.
   let synced = false;
   try {
@@ -226,6 +229,9 @@ export async function updateAdAccountsAction(
   } catch {
     return { ok: false, error: "Falha ao salvar a seleção." };
   }
+
+  // Persiste o NOME das contas selecionadas já.
+  await persistAdAccountNames(projectId, token, accs).catch(() => {});
 
   let synced = false;
   try {

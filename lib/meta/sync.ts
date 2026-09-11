@@ -233,6 +233,29 @@ export async function runMetaSyncAll(sinceDays = 14): Promise<SyncResult[]> {
   return results;
 }
 
+/**
+ * Persiste o NOME das contas de anúncio selecionadas no momento em que o usuário
+ * conecta/gerencia a BM (não depende do sync de insights, que pode estar sob
+ * lock). Cria a linha se faltar e preenche o nome quando conhecido. Best-effort.
+ */
+export async function persistAdAccountNames(projectId: number, token: string, accountIds: string[]): Promise<void> {
+  let nameById = new Map<string, string>();
+  try {
+    nameById = new Map((await listAdAccounts(token)).map((a) => [a.id, a.name]));
+  } catch {
+    return; // sem nomes desta vez — não bloqueia a conexão
+  }
+  const supa = getSupabaseAdmin();
+  for (const id of accountIds) {
+    const meta = id.trim().replace(/^act_/, "");
+    if (!meta) continue;
+    const name = nameById.get(meta);
+    const row: Record<string, unknown> = { project_id: projectId, meta_account_id: meta };
+    if (name) row.name = name;
+    await supa.from("ad_accounts").upsert(row, { onConflict: "project_id,meta_account_id" });
+  }
+}
+
 // ---- helpers ----
 
 async function upsertAdAccount(supa: Supa, projectId: number, account: string, name: string | null): Promise<number> {
