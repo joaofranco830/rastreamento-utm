@@ -49,16 +49,34 @@ Regra geral do sistema (ver CLAUDE.md §3):
   `orders`), nunca do Meta.
 - **Investido, impressões, cliques, CPM, vídeo (views/retention), leads,
   seguidores:** SEMPRE do **Meta** (`meta_insights_daily`).
-- **Page views e checkouts (funil):** do **nosso pixel** (`tracking_events`).
-  No dashboard há **fallback para o Meta** (`landing_page_view` / `initiate
-  checkout`) só quando o pixel ainda não tem dado no período — o campo
-  `pageviews_source`/`checkouts_source` diz qual foi usado.
+- **Page views e checkouts (funil):** do **nosso pixel** (`tracking_events`),
+  mas **contados como VISITANTES ÚNICOS de TRÁFEGO PAGO** (ver ERR-002). No
+  dashboard há **fallback para o Meta** só quando o pixel está vazio no período
+  (`pageviews_source`/`checkouts_source` diz qual foi usado).
 - **Atribuição clique→venda:** last-click 7 dias, pelo nosso `visitor_id`
   (Modelo A) ou pelas UTMs cruas em `src`/`sck`/`xcod` (Modelo B).
 
-> ⚠️ Nosso pixel conta **cada evento** (cada `pageview`/`checkout_iniciado`),
-> incluindo recarga de página, páginas intermediárias do funil e tráfego
-> orgânico/direto. Por isso "page views" do pixel costuma ser MAIOR que o
-> "landing page view" do Meta (1 por clique). Não é erro de atribuição — é
-> diferença de definição. Se quiser "views únicas por visitante", é preciso
-> deduplicar explicitamente (decisão de produto).
+---
+
+## ERR-002 — Métricas de funil infladas (contavam cada evento e incluíam orgânico)
+
+**Sintoma:** dashboard mostrava page views/checkouts bem acima do real (ex.:
+"338 PV / 24 checkouts" quando o real de tráfego era ~218 PV / 16 checkouts).
+
+**Causa:** as métricas de funil contavam **cada evento** do pixel (recarga de
+página, etapas do funil) e **todo tráfego** (pago + orgânico + direto).
+
+**Correção (migration 0054):** page views e checkouts no **dashboard**
+(`central_summary`) e na **aba Campanhas** (`campaigns_table`) passam a contar
+**VISITANTES ÚNICOS** cujo **último clique (last-touchpoint)** veio de uma
+**campanha do Meta** (tráfego pago). O pixel continua gravando tudo (pago +
+orgânico, cada evento) — o recorte "pago + único" é só na apresentação.
+
+**Invariante:**
+> Métrica de funil apresentada (dashboard/campanhas) = **visitante único** de
+> **tráfego pago** (last-click numa campanha do Meta). Nunca contar evento
+> bruto nem tráfego orgânico nessas telas. **Cliques = sempre `link_clicks`**
+> (nunca "cliques (todos)").
+
+> ⚠️ O pixel cru (tabela `tracking_events`) ainda tem TODOS os eventos (pago +
+> orgânico, cada recarga) — de propósito. Só a **apresentação** recorta.
