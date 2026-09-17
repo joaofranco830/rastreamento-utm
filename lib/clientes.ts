@@ -1,10 +1,12 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
- * Leitura da aba "Clientes" (server-only) POR PROJETO, via sessão (RLS por
- * filiação). Devolve uma linha por compra real; o agrupamento por e-mail e os
- * filtros de produto/UTM acontecem no client (volume baixo por projeto).
+ * Leitura da aba "Clientes" (server-only) POR PROJETO. Usa o cliente ADMIN
+ * (service_role, sem RLS) — igual ao dashboard/campanhas — para não estourar o
+ * statement_timeout sob RLS. Seguro: o projectId vem de getActiveProjectId()
+ * (valida a filiação) e a função filtra por p_project_id. Devolve uma linha por
+ * compra real; agrupamento/filtros acontecem no client.
  */
 
 export interface ClienteOrder {
@@ -32,7 +34,7 @@ export async function getClientesOrders(
   from: string,
   to: string,
 ): Promise<ClienteOrder[]> {
-  const supabase = await createClient();
+  const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.rpc("clientes_orders", {
     p_project_id: projectId,
     p_from: from,

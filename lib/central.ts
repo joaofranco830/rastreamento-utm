@@ -1,10 +1,12 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
- * Leitura da Tela Central (server-only) POR PROJETO. Chama central_summary +
- * central_timeseries via SESSÃO do usuário (RLS por filiação garante que só
- * retorna dados de projeto autorizado — ADR-v3-4/11).
+ * Leitura da Tela Central (server-only) POR PROJETO. Usa o cliente ADMIN
+ * (service_role, sem RLS) — igual a lib/dashboard.ts — porque as funções são
+ * pesadas e o RLS por sessão estourava o statement_timeout. Seguro: o projectId
+ * SEMPRE vem de getActiveProjectId(), que valida a filiação a cada request, e as
+ * funções filtram tudo por p_project_id.
  */
 
 export interface ProductBreakdown {
@@ -170,7 +172,7 @@ export async function getCentral(
   to: string,
   adAccounts?: string[] | null,
 ): Promise<CentralData> {
-  const supabase = await createClient();
+  const supabase = getSupabaseAdmin();
   // Vazio/ausente = todas as contas; senão, filtra o investido/Meta por conta.
   const p_ad_accounts = adAccounts && adAccounts.length > 0 ? adAccounts : null;
   const [s, t, pp, prods, cfg] = await Promise.all([
