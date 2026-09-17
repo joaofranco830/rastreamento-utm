@@ -6,6 +6,29 @@ nos RPCs de dashboard/campanhas ou na leitura de UTMs.
 
 ---
 
+## ERR-003 — Aba Campanhas caía com "server error" (statement timeout sob RLS)
+
+**Sintoma (set/2026):** ao abrir a aba Campanhas, tela "This page couldn't load".
+Log: `campaigns_table: canceling statement due to statement timeout`.
+
+**Causa raiz:** `getCampaignsTable`/`getCreativesConsolidated` liam via **cliente
+de sessão (RLS)**. As funções de relatório são pesadas (subconsultas
+correlacionadas por pedido). Sob RLS, CADA acesso às tabelas dispara
+`app_can_access()` — multiplicando o custo. Com o crescimento dos dados,
+estourava o `statement_timeout` de produção.
+
+**Correção:** leituras de relatório passam a usar o **cliente ADMIN**
+(`getSupabaseAdmin`, service_role, sem RLS) — igual a `lib/dashboard.ts`. Vale
+para `lib/campanhas.ts`, `lib/central.ts` (dashboard) e `lib/clientes.ts`.
+
+**Invariante:**
+> Funções de relatório pesadas (dashboard/campanhas/clientes) rodam com o
+> cliente ADMIN, NUNCA sob RLS de sessão. É seguro porque o `projectId` SEMPRE
+> vem de `getActiveProjectId()` (valida a filiação a cada request) e as funções
+> filtram tudo por `p_project_id`. NUNCA aceitar `projectId` vindo do client.
+
+---
+
 ## ERR-001 — Venda atribuída à CAMPANHA errada quando o mesmo criativo roda em várias campanhas
 
 **Sintoma (Franco Advertising, set/2026):** só 1 campanha ativa, mas a aba

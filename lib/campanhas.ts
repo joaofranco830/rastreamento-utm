@@ -1,7 +1,14 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
-/** Leitura da Tela Campanhas (server-only) POR PROJETO, via sessão do usuário (RLS). */
+/**
+ * Leitura da Tela Campanhas (server-only) POR PROJETO. Usa o cliente ADMIN
+ * (service_role, sem RLS) — igual ao dashboard (lib/dashboard.ts) — porque as
+ * funções são pesadas (subconsultas correlacionadas) e o RLS por sessão as fazia
+ * estourar o statement_timeout em produção. É seguro: o projectId SEMPRE vem de
+ * getActiveProjectId(), que valida a filiação do usuário a cada request; a
+ * função ainda filtra tudo por p_project_id.
+ */
 
 export type Level = "campaign" | "adset" | "creative";
 
@@ -61,7 +68,7 @@ export async function getCampaignsTable(
   to: string,
   limit = 20,
 ): Promise<CampaignRow[]> {
-  const supabase = await createClient();
+  const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.rpc("campaigns_table", {
     p_project_id: projectId,
     p_level: level,
@@ -82,7 +89,7 @@ export async function getCreativesConsolidated(
   to: string,
   limit = 20,
 ): Promise<CreativeRow[]> {
-  const supabase = await createClient();
+  const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.rpc("creatives_consolidated", {
     p_project_id: projectId,
     p_product_ids: productIds && productIds.length > 0 ? productIds : null,
