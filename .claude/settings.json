@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "claude-video-vision": {
+      "source": {
+        "source": "github",
+        "repo": "jordanrendric/claude-video-vision"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "claude-video-vision@claude-video-vision": true
+  }
+}
