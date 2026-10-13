@@ -9,5 +9,8 @@
   },
   "enabledPlugins": {
     "claude-video-vision@claude-video-vision": true
-  }
+  },
+  "enabledMcpjsonServers": [
+    "rea"
+  ]
 }
